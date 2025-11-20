@@ -205,7 +205,7 @@
             
             // --- Function: ส่งข้อมูลไป Apps Script (Save/Update) ---
             const sendToGoogleSheet = async (data) => {
-                if (GOOGLE_SHEET_URL === "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec") {
+                if (GOOGLE_SHEET_URL === " ") {
                     showAlert("⚠️ กรุณาเปลี่ยน GOOGLE_SHEET_URL ในโค้ดก่อน!", 'warning');
                     return { isSent: false }; 
                 }
