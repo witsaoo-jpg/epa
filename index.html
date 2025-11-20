@@ -1,595 +1,648 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>แบบประเมิน Early Ambulate และติดตามอาการ</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {}
-      }
-    }
-  </script>
-  <style>
-    @media print {
-      body { margin: 0; padding: 0; }
-      @page { margin: 1cm; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบประเมิน Early Ambulate และติดตามอาการ | Responsive App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#1e40af', // Blue-800
+                        'secondary': '#6b7280', // Gray-500
+                        'accent': '#f59e0b', // Amber-500
+                        'danger': '#dc2626', // Red-600
+                        'success': '#10b981', // Green-500
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            body { margin: 0; padding: 0; }
+            @page { margin: 1cm; }
+            /* ซ่อนปุ่มและส่วนที่ไม่ใช่รายงานเวลาพิมพ์ */
+            .no-print { display: none !important; }
+        }
+    </style>
 </head>
 <body>
 
-  <div id="root"></div>
+    <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
-    const { createRoot } = ReactDOM;
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
 
-    // --- ICON COMPONENTS ---
-    const IconComponent = ({ name, className = "w-6 h-6 text-gray-800" }) => {
-        const icons = {
-            CheckSquare: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12l2 2l4 -4"/></svg>,
-            Square: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>,
-            Clock: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>,
-            FileText: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-5-5z"/><path d="M10 12h4"/><path d="M10 16h4"/><path d="M10 8h4"/></svg>,
-            AlertCircle: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
-            Download: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
-            User: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-            Scissors: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>,
-            Save: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
-            Trash2: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-            Search: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-            Edit: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
-            Thermometer: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4V2a2 2 0 0 0-4 0v2h4z"/><path d="M12 22a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v12a4 4 0 0 0 4 4z"/><line x1="12" y1="14" x2="12" y2="18"/></svg>,
-            Calendar: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+        // --- ICON COMPONENTS (ไม่มีการเปลี่ยนแปลง) ---
+        const IconComponent = ({ name, className = "w-6 h-6 text-gray-800" }) => {
+            const icons = {
+                CheckSquare: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12l2 2l4 -4"/></svg>,
+                Square: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>,
+                Clock: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>,
+                FileText: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-5-5z"/><path d="M10 12h4"/><path d="M10 16h4"/><path d="M10 8h4"/></svg>,
+                AlertCircle: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+                Download: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+                User: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+                Scissors: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>,
+                Save: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+                Trash2: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+                Search: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+                Edit: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
+                Thermometer: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4V2a2 2 0 0 0-4 0v2h4z"/><path d="M12 22a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v12a4 4 0 0 0 4 4z"/><line x1="12" y1="14" x2="12" y2="18"/></svg>,
+                Calendar: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+                RefreshCw: <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-7.2 3.1L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 7.2-3.1L21 16"/><path d="M21 21v-5h-5"/></svg>,
+            };
+            return icons[name] || <span>{name}</span>;
         };
-        return icons[name] || <span>{name}</span>;
-    };
-    
-    const { CheckSquare, Square, Clock, FileText, AlertCircle, Download, User, Scissors, Save, Trash2, Search, Edit, Thermometer, Calendar } = {
-        CheckSquare: (props) => <IconComponent name="CheckSquare" {...props} />,
-        Square: (props) => <IconComponent name="Square" {...props} />,
-        Clock: (props) => <IconComponent name="Clock" {...props} />,
-        FileText: (props) => <IconComponent name="FileText" {...props} />,
-        AlertCircle: (props) => <IconComponent name="AlertCircle" {...props} />,
-        Download: (props) => <IconComponent name="Download" {...props} />,
-        User: (props) => <IconComponent name="User" {...props} />,
-        Scissors: (props) => <IconComponent name="Scissors" {...props} />,
-        Save: (props) => <IconComponent name="Save" {...props} />,
-        Trash2: (props) => <IconComponent name="Trash2" {...props} />,
-        Search: (props) => <IconComponent name="Search" {...props} />,
-        Edit: (props) => <IconComponent name="Edit" {...props} />,
-        Thermometer: (props) => <IconComponent name="Thermometer" {...props} />,
-        Calendar: (props) => <IconComponent name="Calendar" {...props} />,
-    };
+        const { CheckSquare, Square, Clock, FileText, AlertCircle, Download, User, Scissors, Save, Trash2, Search, Edit, Thermometer, Calendar, RefreshCw } = {
+            CheckSquare: (props) => <IconComponent name="CheckSquare" {...props} />,
+            Square: (props) => <IconComponent name="Square" {...props} />,
+            Clock: (props) => <IconComponent name="Clock" {...props} />,
+            FileText: (props) => <IconComponent name="FileText" {...props} />,
+            AlertCircle: (props) => <IconComponent name="AlertCircle" {...props} />,
+            Download: (props) => <IconComponent name="Download" {...props} />,
+            User: (props) => <IconComponent name="User" {...props} />,
+            Scissors: (props) => <IconComponent name="Scissors" {...props} />,
+            Save: (props) => <IconComponent name="Save" {...props} />,
+            Trash2: (props) => <IconComponent name="Trash2" {...props} />,
+            Search: (props) => <IconComponent name="Search" {...props} />,
+            Edit: (props) => <IconComponent name="Edit" {...props} />,
+            Thermometer: (props) => <IconComponent name="Thermometer" {...props} />,
+            Calendar: (props) => <IconComponent name="Calendar" {...props} />,
+            RefreshCw: (props) => <IconComponent name="RefreshCw" {...props} />,
+        };
 
-    // --- GOOGLE APPS SCRIPT URL (***กรุณาเปลี่ยน URL นี้ด้วย Web App URL ล่าสุด***) ---
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec"; 
-    
-    // --- โค้ด React Component หลัก ---
-    function AmbulateAssessment() {
-      const [selectedDay, setSelectedDay] = useState('admission');
-      const [checkedItems, setCheckedItems] = useState({});
-      const [patientInfo, setPatientInfo] = useState({
-        firstName: '', lastName: '', an: '', surgeryType: '', 
-        surgeryDate: '', dischargeDate: ''
-      });
-      const [complications, setComplications] = useState({
-          DVT: false, Atelectasis: false, Constipation: false, OtherSymptoms: ''
-      });
 
-      // savedPatients จะถูกดึงมาจาก Google Sheet แทน Local Storage
-      const [savedPatients, setSavedPatients] = useState({}); 
-      const initialPatientState = { firstName: '', lastName: '', an: '', surgeryType: '', surgeryDate: '', dischargeDate: '' }; 
-      const initialComplicationState = { DVT: false, Atelectasis: false, Constipation: false, OtherSymptoms: '' };
+        // --- GOOGLE APPS SCRIPT URL (***กรุณาเปลี่ยน URL นี้ด้วย Web App URL ล่าสุด***) ---
+        // ***สำคัญ: ต้อง Deploy Apps Script ตามโค้ดที่ให้ในส่วนที่ 3 ก่อน***
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/execL"; 
 
-      const LOCAL_STORAGE_KEY = 'ambulate_patients_db';
+        const initialPatientState = { firstName: '', lastName: '', an: '', surgeryType: '', surgeryDate: '', dischargeDate: '' }; 
+        const initialComplicationState = { DVT: false, Atelectasis: false, Constipation: false, OtherSymptoms: '' };
+        
+        // --- Component: Custom Alert Message ---
+        const Alert = ({ message, type, onClose }) => {
+            const colors = {
+                success: 'bg-success border-success-400 text-white',
+                error: 'bg-danger border-danger-400 text-white',
+                warning: 'bg-accent border-accent-400 text-white',
+            };
 
-      // --- ฟังก์ชันการจัดการข้อมูล Local Storage และ Google Sheet ---
-      
-      // [ใหม่]: ดึงข้อมูลผู้ป่วยทั้งหมดจาก Google Sheet
-      const fetchPatientsFromSheet = async () => {
-          if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
-              console.warn("GOOGLE_SHEET_URL ยังไม่ได้ถูกกำหนด!");
-              return; 
-          }
+            if (!message) return null;
 
-          try {
-              // ใช้ GET Request เพื่อดึงข้อมูลทั้งหมด
-              const response = await fetch(GOOGLE_SHEET_URL, {
-                  method: 'GET',
-                  mode: 'cors', // ใช้ 'cors' สำหรับ GET
-              });
-              
-              const result = await response.json(); 
+            return (
+                <div 
+                    className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-50 transition-opacity duration-300 flex items-center gap-3 ${colors[type]}`}
+                    role="alert"
+                >
+                    <IconComponent name={type === 'success' ? 'CheckSquare' : 'AlertCircle'} className="w-6 h-6" />
+                    <span className="font-semibold">{message}</span>
+                    <button onClick={onClose} className="ml-4 text-white/80 hover:text-white font-bold">×</button>
+                </div>
+            );
+        };
 
-              if (result.result === "success") {
-                  setSavedPatients(result.data);
-                  console.log("Successfully loaded patients from Google Sheet.");
-              } else {
-                  console.error("Error fetching patients from Sheet:", result.message);
-              }
-          } catch (error) {
-              console.error("Error connecting to Google Sheet for fetch:", error);
-          }
-      };
+        // --- โค้ด React Component หลัก ---
+        function AmbulateAssessment() {
+            const [selectedDay, setSelectedDay] = useState('admission');
+            const [checkedItems, setCheckedItems] = useState({});
+            const [patientInfo, setPatientInfo] = useState(initialPatientState);
+            const [complications, setComplications] = useState(initialComplicationState);
+            const [savedPatients, setSavedPatients] = useState({}); // ข้อมูลผู้ป่วยทั้งหมดจาก Sheet
+            const [alertState, setAlertState] = useState({ message: '', type: '', key: 0 });
+            const [isLoading, setIsLoading] = useState(false);
 
-      // [ปรับปรุง]: โหลดผู้ป่วยจาก State ที่ดึงมาจาก Sheet
-      const loadPatient = (patientKey) => {
-        const patientData = savedPatients[patientKey];
-        if (patientData) {
-            if (window.confirm(`ต้องการโหลดข้อมูลผู้ป่วย: ${patientData.info.firstName} ${patientData.info.lastName} (AN: ${patientKey}) เพื่อแก้ไขหรือไม่? ข้อมูลปัจจุบันจะถูกแทนที่!`)) {
-                
-                // ตรวจสอบและแปลงวันที่ให้อยู่ในรูปแบบ YYYY-MM-DD สำหรับ input type="date"
-                const loadedInfo = { 
-                    ...initialPatientState, 
-                    ...patientData.info,
-                };
-                
-                const loadedComplications = { ...initialComplicationState, ...patientData.complications };
 
-                setPatientInfo(loadedInfo);
-                setCheckedItems(patientData.checks);
-                setComplications(loadedComplications);
-                setSelectedDay('admission');
-                alert(`โหลดข้อมูลผู้ป่วย AN: ${patientKey} สำเร็จ!`);
-            }
-        }
-      };
+            // --- Function: แสดง Alert ---
+            const showAlert = (message, type = 'success') => {
+                setAlertState({ message, type, key: Date.now() });
+                setTimeout(() => setAlertState({ message: '', type: '', key: 0 }), 5000);
+            };
 
-      // [ปรับปรุง]: ลบข้อมูล (ลบเฉพาะในรายการแสดงผล เพราะไม่ได้ลบใน Sheet)
-      const deletePatient = (patientKey, patientName) => {
-        if (window.confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลผู้ป่วย: ${patientName} (AN: ${patientKey})? ข้อมูลนี้จะถูกลบออกจากรายการประวัติผู้ป่วยในเครื่องเท่านั้น และจะไม่ถูกลบออกจาก Google Sheet!`)) {
+            // --- Function: ดึงข้อมูลผู้ป่วยทั้งหมดจาก Google Sheet ---
+            const fetchPatientsFromSheet = async () => {
+                if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
+                    showAlert("⚠️ กรุณาเปลี่ยน GOOGLE_SHEET_URL ในโค้ดก่อน!", 'warning');
+                    return; 
+                }
+                setIsLoading(true);
+                try {
+                    const response = await fetch(GOOGLE_SHEET_URL + "?action=getAll", { method: 'GET', mode: 'cors' });
+                    const result = await response.json();
+                    
+                    if (result.result === "success") {
+                        // result.data คือ Object ของผู้ป่วย { 'AN': { info, checks, complications } }
+                        setSavedPatients(result.data);
+                        showAlert(`✅ โหลดข้อมูลผู้ป่วยทั้งหมด ${Object.keys(result.data).length} รายการสำเร็จ!`, 'success');
+                    } else {
+                        showAlert(`❌ Error: ${result.message || "เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Sheet"}`, 'error');
+                        console.error("Error fetching patients from Sheet:", result);
+                    }
+                } catch (error) {
+                    showAlert(`❌ Error: ไม่สามารถเชื่อมต่อ Apps Script ได้ (${error.message})`, 'error');
+                    console.error("Error connecting to Google Sheet for fetch:", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
             
-            // ใช้ Destructuring เพื่อลบ Key นั้นออก
-            const { [patientKey]: deleted, ...restOfPatients } = savedPatients;
+            // --- Function: โหลดผู้ป่วยที่เลือกเพื่อแก้ไข ---
+            const loadPatient = (patientKey) => {
+                const patientData = savedPatients[patientKey];
+                if (patientData) {
+                    if (window.confirm(`ต้องการโหลดข้อมูลผู้ป่วย: ${patientData.info.firstName} ${patientData.info.lastName} (AN: ${patientKey}) เพื่อแก้ไขหรือไม่? ข้อมูลปัจจุบันจะถูกแทนที่!`)) {
+                        
+                        const loadedInfo = { ...initialPatientState, ...patientData.info };
+                        const loadedComplications = { ...initialComplicationState, ...patientData.complications };
 
-            setSavedPatients(restOfPatients);
+                        setPatientInfo(loadedInfo);
+                        setCheckedItems(patientData.checks);
+                        setComplications(loadedComplications);
+                        setSelectedDay('admission');
+                        showAlert(`📝 โหลดข้อมูลผู้ป่วย AN: ${patientKey} สำเร็จ!`, 'success');
+                    }
+                }
+            };
 
-            if (patientInfo.an === patientKey) {
+            // --- Function: ลบข้อมูล (ส่งคำสั่งลบไปยัง Apps Script) ---
+            const deletePatient = async (patientKey, patientName) => {
+                if (window.confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลผู้ป่วย: ${patientName} (AN: ${patientKey})? ข้อมูลนี้จะถูกลบออกจาก Google Sheet ถาวร!`)) {
+                    setIsLoading(true);
+                    try {
+                        const response = await fetch(GOOGLE_SHEET_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'deletePatient', an: patientKey })
+                        });
+                        const result = await response.json();
+
+                        if (result.result === "success") {
+                            // โหลดข้อมูลใหม่หลังจากลบ
+                            await fetchPatientsFromSheet(); 
+                            showAlert(`🗑️ ลบข้อมูลผู้ป่วย AN: ${patientKey} สำเร็จ!`, 'success');
+
+                            // หากผู้ป่วยที่กำลังลบอยู่เป็นผู้ป่วยปัจจุบัน ให้ทำการ Reset Form
+                            if (patientInfo.an === patientKey) {
+                                resetAssessment(false);
+                            }
+                        } else {
+                            showAlert(`❌ ลบไม่สำเร็จ! Error: ${result.message}`, 'error');
+                        }
+                    } catch (error) {
+                        showAlert(`❌ Error: ${error.message}`, 'error');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                }
+            };
+            
+            // --- Function: ส่งข้อมูลไป Apps Script (Save/Update) ---
+            const sendToGoogleSheet = async (data) => {
+                if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
+                    showAlert("⚠️ กรุณาเปลี่ยน GOOGLE_SHEET_URL ในโค้ดก่อน!", 'warning');
+                    return { isSent: false }; 
+                }
+                
+                try {
+                    const response = await fetch(GOOGLE_SHEET_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'savePatient', data: data })
+                    });
+                    const result = await response.json();
+                    
+                    if (result.result === "success") {
+                        return { isSent: true, message: result.message };
+                    } else {
+                        return { isSent: false, message: result.message || "Failed to send data." };
+                    }
+                } catch (error) {
+                    return { isSent: false, message: error.toString() };
+                }
+            };
+
+            // --- Function: บันทึกข้อมูลผู้ป่วยปัจจุบัน ---
+            const saveCurrentPatient = async () => {
+                if (!isFormValid) {
+                    showAlert('กรุณากรอก ชื่อ-นามสกุล และ AN ให้ครบถ้วนก่อนบันทึก!', 'warning');
+                    return;
+                }
+                setIsLoading(true);
+                const patientDataToSave = {
+                    info: patientInfo,
+                    checks: checkedItems,
+                    complications: complications,
+                    lastUpdate: new Date().toISOString()
+                };
+
+                const { isSent, message } = await sendToGoogleSheet(patientDataToSave);
+
+                if (isSent) {
+                    // เมื่อส่งสำเร็จ ให้ดึงข้อมูลประวัติผู้ป่วยล่าสุดจาก Sheet มาแสดงใหม่ (Re-synchronize)
+                    await fetchPatientsFromSheet();
+                    showAlert(`✅ ${message} ข้อมูลผู้ป่วย AN: ${patientInfo.an} เรียบร้อยแล้ว!`, 'success');
+                } else {
+                    showAlert(`❌ ส่งข้อมูลไปยัง Google Sheet ล้มเหลว! Error: ${message}`, 'error');
+                }
+                setIsLoading(false);
+            };
+            
+            // --- Function: ล้างข้อมูลฟอร์มปัจจุบัน ---
+            const resetAssessment = (confirmUser = true) => {
+                if (confirmUser && !window.confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลฟอร์มปัจจุบัน?")) return;
+                
                 setPatientInfo(initialPatientState);
                 setCheckedItems({});
                 setComplications(initialComplicationState);
-            }
+                setSelectedDay('admission');
+                if (confirmUser) showAlert('✨ ข้อมูลฟอร์มปัจจุบันถูกล้างแล้ว!', 'success');
+            };
 
-            alert(`🗑️ ลบข้อมูลผู้ป่วย AN: ${patientKey} ออกจากรายการเรียบร้อยแล้ว`);
-        }
-      };
-      
-      // [ปรับปรุง]: ส่งข้อมูลไป Apps Script (Apps Script จะจัดการการ Append/Update เอง)
-      const sendToGoogleSheet = async (data) => {
-          if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
-              console.warn("GOOGLE_SHEET_URL ยังไม่ได้ถูกกำหนด!");
-              return { isSent: false, message: "URL is not set" }; 
-          }
-          
-          try {
-              const response = await fetch(GOOGLE_SHEET_URL, {
-                  method: 'POST',
-                  mode: 'no-cors',
-                  headers: {
-                      'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(data)
-              });
-              
-              console.log("Data sent to Google Sheet endpoint. Check Google Sheet for verification.");
-              return { isSent: true, message: "Sent successfully" };
-          } catch (error) {
-              console.error("Error sending data to Google Sheet:", error);
-              return { isSent: false, message: error.toString() };
-          }
-      };
+            // โหลดข้อมูลผู้ป่วยทั้งหมดเมื่อ Component ถูกโหลดครั้งแรก
+            useEffect(() => {
+                fetchPatientsFromSheet();
+            }, []);
 
-      const saveCurrentPatient = async () => {
-        if (!isFormValid) {
-            alert('กรุณากรอก ชื่อ-นามสกุล และ AN ให้ครบถ้วนก่อนบันทึก!');
-            return;
-        }
+            // --- Data & Logic For Rendering ---
 
-        const patientDataToSave = {
-            info: patientInfo,
-            checks: checkedItems,
-            complications: complications,
-            lastUpdate: new Date().toISOString()
-        };
+            const assessmentData = {
+                admission: { title: 'Admission Day', subtitle: 'วันที่ผ่าตัด', color: 'from-pink-500 to-pink-600', items: [{ id: 'a1', text: 'ให้ผู้ป่วยฝึก Ambulate' }, { id: 'a2', text: 'พลิกตะแคงตัวซ้าย ขวา ทุก 2 ชม.' }, { id: 'a3', text: 'การนั่งหลังตรงทั้ง หัวเตียงศีรษะสูง 30-45 องศา นาน 15 นาที' }, { id: 'a4', text: 'การตะแคงตัวลุกนั่ง บนเตียงไม่พึ่งหัวเตียง และแกว่งขาข้างเตียง นาน 5 นาที' }, { id: 'a5', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อนลุกเดิน' }, { id: 'a6', text: 'ลุกเดิน' }] },
+                surgery: { title: 'วันที่ผ่าตัด', subtitle: 'ตามแพทย์สั่ง', color: 'from-blue-500 to-blue-600', items: [{ id: 's1', text: 'หลังรับผู้ป่วยออก จาก OR' }, { id: 's2', text: 'พลิกตะแคงตัวซ้าย ขวา ทุก 2 ชม.' }, { id: 's3', text: 'การนั่งหลังตรงทั้ง หัวเตียงศีรษะสูง 30-45 องศา นาน 15 นาที 1 รอบ' }, { id: 's4', text: 'การตะแคงตัวลุก นั่งบนเตียงไม่พึ่งหัว เตียงและแกว่งขาข้าง เตียง นาน 5 นาที' }] },
+                postop1: { title: 'Post Op Day 1', subtitle: 'วันหลังผ่าตัด 1 วัน', color: 'from-purple-500 to-purple-600', items: [{ id: 'p1', text: 'การนั่งแกว่งขาข้าง เตียง ท้านาน 5 นาที' }, { id: 'p2', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อน ลุกเดิน' }, { id: 'p3', text: 'ลุกเดินพร้อม พยาบาลและญาติ ออกมานอกห้อง ลง บันทึกระยะทางที่ เดินได้เป็นเมตร ครั้ง ละอย่างน้อย 40 เมตร' }] },
+                postop2: { title: 'Post Op Day 2 ถึง Discharge', subtitle: 'วันหลังผ่าตัด 2 วันขึ้นไป', color: 'from-green-500 to-green-600', items: [{ id: 'd1', text: 'การนั่งแกว่งขาข้าง เตียง ท้านาน 5 นาที' }, { id: 'd2', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อน ลุกเดิน' }, { id: 'd3', text: 'ลุกเดินพร้อม พยาบาลและญาติ ออกมานอกห้อง ลง บันทึกระยะทางที่เดิน ได้เป็นเมตร ครั้งละ อย่างน้อย 60 เมตร' }] }
+            };
 
-        // 1. ส่งข้อมูลไปยัง Google Sheets (Apps Script จะตัดสินใจว่าจะ Update หรือ Append)
-        const { isSent, message } = await sendToGoogleSheet(patientDataToSave);
-
-        if (!isSent) {
-            alert(`❌ ส่งข้อมูลไปยัง Google Sheet ล้มเหลว! Error: ${message}`);
-            return;
-        }
-
-        // 2. เมื่อส่งสำเร็จ ให้ดึงข้อมูลประวัติผู้ป่วยล่าสุดจาก Sheet มาแสดงใหม่ (Re-synchronize)
-        await fetchPatientsFromSheet();
-        
-        alert(`✅ บันทึก/อัปเดตข้อมูลผู้ป่วย AN: ${patientInfo.an} เรียบร้อยแล้ว! ข้อมูลถูกส่งไปที่ Google Sheet`);
-      };
-      
-      const resetAssessment = () => {
-        if (window.confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลฟอร์มปัจจุบัน?")) {
-            setPatientInfo(initialPatientState);
-            setCheckedItems({});
-            setComplications(initialComplicationState);
-            setSelectedDay('admission');
-            alert('✨ ข้อมูลฟอร์มปัจจุบันถูกล้างแล้ว! กรุณาเริ่มกรอกข้อมูลผู้ป่วยรายใหม่');
-        }
-      };
-
-      // [ใหม่]: เมื่อโหลด Component ให้ดึงข้อมูลจาก Apps Script ทันที
-      useEffect(() => {
-        fetchPatientsFromSheet();
-      }, []);
-
-      // --- ฟังก์ชันการทำงานอื่น ๆ (ส่วน Report) ---
-
-      const assessmentData = {
-        admission: { title: 'Admission Day', subtitle: 'วันที่ผ่าตัด', color: 'from-pink-500 to-pink-600', items: [{ id: 'a1', text: 'ให้ผู้ป่วยฝึก Ambulate' }, { id: 'a2', text: 'พลิกตะแคงตัวซ้าย ขวา ทุก 2 ชม.' }, { id: 'a3', text: 'การนั่งหลังตรงทั้ง หัวเตียงศีรษะสูง 30-45 องศา นาน 15 นาที' }, { id: 'a4', text: 'การตะแคงตัวลุกนั่ง บนเตียงไม่พึ่งหัวเตียง และแกว่งขาข้างเตียง นาน 5 นาที' }, { id: 'a5', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อนลุกเดิน' }, { id: 'a6', text: 'ลุกเดิน' }] },
-        surgery: { title: 'วันที่ผ่าตัด', subtitle: 'ตามแพทย์สั่ง', color: 'from-blue-500 to-blue-600', items: [{ id: 's1', text: 'หลังรับผู้ป่วยออก จาก OR' }, { id: 's2', text: 'พลิกตะแคงตัวซ้าย ขวา ทุก 2 ชม.' }, { id: 's3', text: 'การนั่งหลังตรงทั้ง หัวเตียงศีรษะสูง 30-45 องศา นาน 15 นาที 1 รอบ' }, { id: 's4', text: 'การตะแคงตัวลุก นั่งบนเตียงไม่พึ่งหัว เตียงและแกว่งขาข้าง เตียง นาน 5 นาที' }] },
-        postop1: { title: 'Post Op Day 1', subtitle: 'วันหลังผ่าตัด 1 วัน', color: 'from-purple-500 to-purple-600', items: [{ id: 'p1', text: 'การนั่งแกว่งขาข้าง เตียง ท้านาน 5 นาที' }, { id: 'p2', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อน ลุกเดิน' }, { id: 'p3', text: 'ลุกเดินพร้อม พยาบาลและญาติ ออกมานอกห้อง ลง บันทึกระยะทางที่ เดินได้เป็นเมตร ครั้ง ละอย่างน้อย 40 เมตร' }] },
-        postop2: { title: 'Post Op Day 2 ถึง Discharge', subtitle: 'วันหลังผ่าตัด 2 วันขึ้นไป', color: 'from-green-500 to-green-600', items: [{ id: 'd1', text: 'การนั่งแกว่งขาข้าง เตียง ท้านาน 5 นาที' }, { id: 'd2', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อน ลุกเดิน' }, { id: 'd3', text: 'ลุกเดินพร้อม พยาบาลและญาติ ออกมานอกห้อง ลง บันทึกระยะทางที่เดิน ได้เป็นเมตร ครั้งละ อย่างน้อย 60 เมตร' }] }
-      };
-
-      const currentAssessment = assessmentData[selectedDay];
-      const handleCheck = (itemId) => setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-      const isFormValid = patientInfo.firstName && patientInfo.lastName && patientInfo.an;
-      
-      const handleComplicationCheck = (name) => {
-          setComplications(prev => ({ ...prev, [name]: !prev[name] }));
-      };
-
-      const getProgress = () => {
-        const total = currentAssessment.items.length;
-        const checked = currentAssessment.items.filter(item => checkedItems[item.id]).length;
-        return total > 0 ? Math.round((checked / total) * 100) : 0;
-      };
-
-      const formatDateForReport = (dateString) => {
-          if (!dateString) return '- ไม่มีระบุ -';
-          try {
-              const date = new Date(dateString);
-              // ต้องเพิ่ม 1 วันเพื่อชดเชย Timezone effect เมื่อใช้ input type="date"
-              date.setDate(date.getDate() + 1); 
-              return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric'});
-          } catch (e) {
-              return '- รูปแบบไม่ถูกต้อง -';
-          }
-      };
-
-      const generatePDF = () => {
-        const content = document.createElement('div');
-        content.style.padding = '40px'; content.style.fontFamily = 'Arial, sans-serif'; content.style.maxWidth = '800px'; content.style.margin = '0 auto'; content.style.backgroundColor = 'white';
-
-        const summaryHTML = Object.entries(assessmentData).map(([key, data]) => {
-            const total = data.items.length;
-            const checked = data.items.filter(item => checkedItems[item.id]).length;
-            const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
-            let colorClass = key === 'surgery' ? '#3b82f6' : (key === 'postop1' ? '#a855f7' : (key === 'postop2' ? '#10b981' : '#ec4899'));
-
-            return `
-              <div style="margin-bottom: 30px; page-break-inside: avoid;">
-                <div style="background: linear-gradient(to right, ${colorClass}, ${colorClass}); color: white; padding: 15px; border-radius: 10px 10px 0 0;">
-                  <h2 style="margin: 0; font-size: 20px;">${data.title}</h2>
-                  <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">${data.subtitle}</p>
-                </div>
-                <div style="border: 2px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px; padding: 20px;">
-                  <div style="background-color: #f8fafc; padding: 10px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-weight: 600; color: #475569;">ความคืบหน้า</span>
-                    <span style="font-weight: 700; color: ${colorClass}; font-size: 18px;">${checked}/${total} (${percentage}%)</span>
-                  </div>
-                  <table style="width: 100%; border-collapse: collapse;">
-                    ${data.items.map((item, index) => `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px 8px; width: 60px; text-align: center;">${checkedItems[item.id] ? '<span style="color: #10b981; font-weight: bold;">✓</span>' : '☐'}</td><td style="padding: 12px 8px;"><span style="color: #334155;">${item.text}</span></td></tr>`).join('')}
-                  </table>
-                </div>
-              </div>
-            `;
-        }).join('');
-
-        const complicationHTML = `
-            <h2 style="color: #ef4444; margin-top: 30px; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #fca5a5; padding-bottom: 10px;">🔴 สรุปอาการและภาวะแทรกซ้อน (Immobility Complications)</h2>
-            <ul style="list-style: none; padding: 0;">
-                <li style="margin-bottom: 8px;"><span style="color: ${complications.DVT ? '#ef4444' : '#10b981'}; font-weight: bold;">${complications.DVT ? '⚠️' : '✅'} DVT (ลิ่มเลือดอุดตัน):</span> ${complications.DVT ? 'พบ' : 'ไม่พบ'}</li>
-                <li style="margin-bottom: 8px;"><span style="color: ${complications.Atelectasis ? '#ef4444' : '#10b981'}; font-weight: bold;">${complications.Atelectasis ? '⚠️' : '✅'} ปอดแฟบ/ปอดอักเสบ:</span> ${complications.Atelectasis ? 'พบ' : 'ไม่พบ'}</li>
-                <li style="margin-bottom: 8px;"><span style="color: ${complications.Constipation ? '#ef4444' : '#10b981'}; font-weight: bold;">${complications.Constipation ? '⚠️' : '✅'} ท้องผูก/ปัญหาขับถ่าย:</span> ${complications.Constipation ? 'พบ' : 'ไม่พบ'}</li>
-                <li style="margin-bottom: 8px;"><span style="font-weight: bold;">อาการอื่น ๆ:</span> ${complications.OtherSymptoms || '- ไม่มีระบุ -'}</li>
-            </ul>
-        `;
-        
-        const surgeryDateText = formatDateForReport(patientInfo.surgeryDate);
-        const dischargeDateText = formatDateForReport(patientInfo.dischargeDate);
-
-
-        const totalItems = Object.values(assessmentData).reduce((sum, data) => sum + data.items.length, 0);
-        const totalChecked = Object.values(assessmentData).reduce((sum, data) => sum + data.items.filter(item => checkedItems[item.id]).length, 0);
-        const totalPercentage = totalItems > 0 ? Math.round((totalChecked / totalItems) * 100) : 0;
-
-        content.innerHTML = `
-          <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
-            <h1 style="color: #1e40af; margin-bottom: 10px; font-size: 28px;">แบบประเมิน Early Ambulate และติดตามอาการ</h1>
-            <p style="color: #64748b; font-size: 14px;">รายงานการประเมินผู้ป่วย</p>
-          </div>
-          <div style="background-color: #f1f5f9; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
-            <h2 style="color: #334155; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;">ข้อมูลผู้ป่วย</h2>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr><td style="padding: 8px 0; color: #475569; font-weight: 600; width: 180px;">ชื่อ-นามสกุล:</td><td style="padding: 8px 0; color: #1e293b;">${patientInfo.firstName} ${patientInfo.lastName}</td></tr>
-              <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">AN:</td><td style="padding: 8px 0; color: #1e293b;">${patientInfo.an}</td></tr>
-              <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">ประเภทการผ่าตัด:</td><td style="padding: 8px 0; color: #1e293b;">${patientInfo.surgeryType || '- ไม่มีระบุ -'}</td></tr>
-              <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">วันผ่าตัด:</td><td style="padding: 8px 0; color: #1e293b;">${surgeryDateText}</td></tr> 
-              <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">วันจำหน่าย (Discharge):</td><td style="padding: 8px 0; color: #1e293b;">${dischargeDateText}</td></tr> 
-              <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">วันที่ออกรายงาน:</td><td style="padding: 8px 0; color: #1e293b;">${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</td></tr>
-            </table>
-          </div>
-          ${complicationHTML}
-          ${summaryHTML}
-          <div style="background-color: #ecfdf5; border: 2px solid #10b981; border-radius: 10px; padding: 20px; margin-top: 30px;">
-            <h2 style="color: #065f46; margin-bottom: 15px; font-size: 20px;">สรุปผลการประเมินรวม (Early Ambulate Score)</h2>
-            <div style="text-align: center;">
-              <div style="font-size: 48px; font-weight: 700; color: #10b981; margin-bottom: 10px;">${totalChecked}/${totalItems}</div>
-              <div style="font-size: 24px; color: #047857;">${totalPercentage}% เสร็จสมบูรณ์</div>
-            </div>
-          </div>
-          <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px;">
-            <p>รายงานนี้สร้างโดยระบบ Early Ambulate Assessment</p>
-            <p>© ${new Date().getFullYear()} - ระบบประเมินผู้ป่วย</p>
-          </div>
-        `;
-
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        printWindow.document.write(`<html><head><title>รายงานการประเมิน - ${patientInfo.firstName} ${patientInfo.lastName}</title><style>@media print { body { margin: 0; padding: 0; } @page { margin: 1cm; } } body { font-family: Arial, sans-serif; }</style></head><body>${content.innerHTML}</body></html>`);
-        printWindow.document.close();
-        setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
-      };
-
-      // --- JSX/HTML Structure ---
-
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
-          <div className="max-w-4xl mx-auto">
+            const currentAssessment = assessmentData[selectedDay];
+            const handleCheck = (itemId) => setCheckedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+            const isFormValid = patientInfo.firstName && patientInfo.lastName && patientInfo.an;
             
-            <div className="text-center mb-8 pt-8">
-              <div className="inline-flex items-center gap-3 mb-4">
-                <FileText className="w-10 h-10 text-blue-600" />
-                <h1 className="text-3xl font-bold text-gray-800">แบบประเมิน Early Ambulate และติดตามอาการ</h1>
-              </div>
-            </div>
+            const handleComplicationCheck = (name) => {
+                setComplications(prev => ({ ...prev, [name]: !prev[name] }));
+            };
 
-            {/* Patient Information Form */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <User className="w-6 h-6 text-blue-600" />
-                <h2 className="text-xl font-bold text-gray-800">ข้อมูลผู้ป่วยที่กำลังประเมิน</h2>
-              </div>
-              
-              {/* Row 1: Core Info */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4"> 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">ชื่อ-นามสกุล <span className="text-red-500">*</span></label>
-                  <div className="flex gap-2">
-                      <input type="text" value={patientInfo.firstName} onChange={(e) => setPatientInfo({...patientInfo, firstName: e.target.value})} placeholder="ชื่อ" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" />
-                      <input type="text" value={patientInfo.lastName} onChange={(e) => setPatientInfo({...patientInfo, lastName: e.target.value})} placeholder="นามสกุล" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">AN <span className="text-red-500">*</span></label>
-                  <input type="text" value={patientInfo.an} onChange={(e) => setPatientInfo({...patientInfo, an: e.target.value})} placeholder="ระบุ AN" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">ประเภทการผ่าตัด</label>
-                  <div className="relative">
-                    <input type="text" value={patientInfo.surgeryType} onChange={(e) => setPatientInfo({...patientInfo, surgeryType: e.target.value})} placeholder="เช่น TKR, THR, ACDF" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none transition-colors pr-10" />
-                    <Scissors className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 2: Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4"> 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">วันผ่าตัด</label>
-                  <div className="relative">
-                    <input 
-                      type="date" 
-                      value={patientInfo.surgeryDate} 
-                      onChange={(e) => setPatientInfo({...patientInfo, surgeryDate: e.target.value})} 
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors pr-10" 
-                    />
-                    <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">วันจำหน่าย (Discharge)</label>
-                  <div className="relative">
-                    <input 
-                      type="date" 
-                      value={patientInfo.dischargeDate} 
-                      onChange={(e) => setPatientInfo({...patientInfo, dischargeDate: e.target.value})} 
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none transition-colors pr-10" 
-                    />
-                    <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Complication Monitoring */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-                <div className="flex items-center gap-2 mb-4 border-b pb-3">
-                    <Thermometer className="w-6 h-6 text-red-600" />
-                    <h2 className="text-xl font-bold text-gray-800">🔴 อาการและภาวะแทรกซ้อนที่ต้องเฝ้าระวัง</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    {/* DVT */}
-                    <div 
-                        onClick={() => handleComplicationCheck('DVT')} 
-                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors 
-                        ${complications.DVT ? 'bg-red-100 border-red-500 shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-red-300'}`}
-                    >
-                        <span className={`font-semibold ${complications.DVT ? 'text-red-600' : 'text-gray-700'}`}>DVT (ลิ่มเลือดอุดตัน)</span>
-                        {complications.DVT ? <AlertCircle className="w-5 h-5 text-red-600 ml-auto" /> : <Square className="w-5 h-5 text-gray-400 ml-auto" />}
-                    </div>
-                    {/* Atelectasis */}
-                    <div 
-                        onClick={() => handleComplicationCheck('Atelectasis')} 
-                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors 
-                        ${complications.Atelectasis ? 'bg-red-100 border-red-500 shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-red-300'}`}
-                    >
-                        <span className={`font-semibold ${complications.Atelectasis ? 'text-red-600' : 'text-gray-700'}`}>ปอดแฟบ/ปอดอักเสบ</span>
-                        {complications.Atelectasis ? <AlertCircle className="w-5 h-5 text-red-600 ml-auto" /> : <Square className="w-5 h-5 text-gray-400 ml-auto" />}
-                    </div>
-                    {/* Constipation */}
-                    <div 
-                        onClick={() => handleComplicationCheck('Constipation')} 
-                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors 
-                        ${complications.Constipation ? 'bg-red-100 border-red-500 shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-red-300'}`}
-                    >
-                        <span className={`font-semibold ${complications.Constipation ? 'text-red-600' : 'text-gray-700'}`}>ท้องผูก/ปัญหาขับถ่าย</span>
-                        {complications.Constipation ? <AlertCircle className="w-5 h-5 text-red-600 ml-auto" /> : <Square className="w-5 h-5 text-gray-400 ml-auto" />}
-                    </div>
-                </div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">อาการ/หมายเหตุอื่น ๆ:</label>
-                <textarea
-                    value={complications.OtherSymptoms}
-                    onChange={(e) => setComplications({...complications, OtherSymptoms: e.target.value})}
-                    placeholder="ระบุอาการอื่น ๆ เช่น ข้อติด, แผลกดทับ, ไข้, อื่น ๆ"
-                    rows="2"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none transition-colors"
-                ></textarea>
-            </div>
-
-            {/* Export & Save Buttons */}
-            <div className="flex justify-end gap-3 mb-8">
-              {/* ปุ่ม: เริ่มผู้ป่วยรายใหม่ (Reset) */}
-              <button onClick={resetAssessment} className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 bg-red-500 text-white hover:bg-red-600 hover:shadow-xl transform hover:scale-105">
-                <Trash2 className="w-5 h-5" />ล้างฟอร์มปัจจุบัน
-              </button>
-              
-              {/* ปุ่ม: บันทึกผู้ป่วยปัจจุบัน (Save/Update) - **มีการส่งข้อมูลไป Google Sheet ในฟังก์ชันนี้** */}
-              <button
-                onClick={saveCurrentPatient}
-                disabled={!isFormValid}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 ${isFormValid ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-              >
-                <Save className="w-5 h-5" />
-                บันทึก/อัปเดต & ส่งข้อมูล
-              </button>
-
-              {/* ปุ่ม: ออกรายงาน PDF */}
-              <button onClick={generatePDF} disabled={!isFormValid} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 ${isFormValid ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:scale-105' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
-                <Download className="w-5 h-5" />ออกรายงาน PDF
-              </button>
-            </div>
+            const formatDateForReport = (dateString) => {
+                if (!dateString) return '- ไม่มีระบุ -';
+                try {
+                    const date = new Date(dateString);
+                    // ปรับ Timezone/Offset เพื่อให้แสดงวันที่ถูกต้อง
+                    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+                    return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric'});
+                } catch (e) {
+                    return '- รูปแบบไม่ถูกต้อง -';
+                }
+            };
             
-            {/* Day Selection Tabs */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-              {Object.entries(assessmentData).map(([key, data]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedDay(key)}
-                  className={`p-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${selectedDay === key ? `bg-gradient-to-r ${data.color} text-white shadow-xl` : 'bg-white text-gray-700 hover:shadow-xl'}`}
-                >
-                  <div className="font-bold text-sm mb-1">{data.title}</div>
-                  <div className="text-xs opacity-90">{data.subtitle}</div>
-                </button>
-              ))}
-            </div>
+            // ใช้โค้ด generatePDF เดิม (ไม่มีการเปลี่ยนแปลงมากนัก เนื่องจากโค้ดเดิมดีอยู่แล้ว)
+            const generatePDF = () => {
+                // ... (โค้ด generatePDF เดิมของคุณ)
+                const content = document.createElement('div');
+                content.style.padding = '40px'; content.style.fontFamily = 'Arial, sans-serif'; content.style.maxWidth = '800px'; content.style.margin = '0 auto'; content.style.backgroundColor = 'white';
 
-            {/* Assessment Card (Checklist) */}
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden mb-6">
-              <div className={`bg-gradient-to-r ${currentAssessment.color} p-6 text-white`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{currentAssessment.title}</h2>
-                    <p className="text-white/90">{currentAssessment.subtitle}</p>
-                  </div>
-                  <Clock className="w-12 h-12 opacity-80" />
-                </div>
-              </div>
+                const summaryHTML = Object.entries(assessmentData).map(([key, data]) => {
+                    const total = data.items.length;
+                    const checked = data.items.filter(item => checkedItems[item.id]).length;
+                    const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
+                    let colorClass = key === 'surgery' ? '#3b82f6' : (key === 'postop1' ? '#a855f7' : (key === 'postop2' ? '#10b981' : '#ec4899'));
 
-              {/* Checklist Items */}
-              <div className="p-6 space-y-3">
-                {currentAssessment.items.map((item, index) => (
-                  <div key={item.id} onClick={() => handleCheck(item.id)} className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${checkedItems[item.id] ? 'bg-green-50 border-green-400' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
-                    <div className="flex-shrink-0 mt-1">
-                      {checkedItems[item.id] ? (<CheckSquare className="w-6 h-6 text-green-600" />) : (<Square className="w-6 h-6 text-gray-400" />)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-xs font-bold px-2 py-1 rounded ${checkedItems[item.id] ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600'}`}>ข้อ {index + 1}</span>
-                      </div>
-                      <p className={`text-base leading-relaxed ${checkedItems[item.id] ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>{item.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    return `
+                        <div style="margin-bottom: 30px; page-break-inside: avoid;">
+                            <div style="background: linear-gradient(to right, ${colorClass}, ${colorClass}); color: white; padding: 15px; border-radius: 10px 10px 0 0;">
+                                <h2 style="margin: 0; font-size: 20px;">${data.title}</h2>
+                                <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">${data.subtitle}</p>
+                            </div>
+                            <div style="border: 2px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px; padding: 20px;">
+                                <div style="background-color: #f8fafc; padding: 10px; border-radius: 5px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-weight: 600; color: #475569;">ความคืบหน้า</span>
+                                    <span style="font-weight: 700; color: ${colorClass}; font-size: 18px;">${checked}/${total} (${percentage}%)</span>
+                                </div>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    ${data.items.map((item, index) => `<tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 12px 8px; width: 60px; text-align: center;">${checkedItems[item.id] ? '<span style="color: #10b981; font-weight: bold;">✓</span>' : '☐'}</td><td style="padding: 12px 8px;"><span style="color: #334155;">${item.text}</span></td></tr>`).join('')}
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
 
-            {/* ประวัติผู้ป่วยที่บันทึกไว้ (ดึงจาก Google Sheet) */}
-            <div className="bg-white rounded-xl shadow-2xl p-6 mb-12">
-                <div className="flex items-center gap-2 mb-4 border-b pb-3">
-                    <Search className="w-6 h-6 text-purple-600" />
-                    <h3 className="text-xl font-bold text-gray-800">ประวัติผู้ป่วยที่บันทึกไว้ ({Object.keys(savedPatients).length} ราย)</h3>
-                </div>
+                const complicationHTML = `
+                    <h2 style="color: #ef4444; margin-top: 30px; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid #fca5a5; padding-bottom: 10px;">🔴 สรุปอาการและภาวะแทรกซ้อน (Immobility Complications)</h2>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 8px;"><span style="color: ${complications.DVT ? '#ef4444' : '#10b981'}; font-weight: bold;">${complications.DVT ? '⚠️' : '✅'} DVT (ลิ่มเลือดอุดตัน):</span> ${complications.DVT ? 'พบ' : 'ไม่พบ'}</li>
+                        <li style="margin-bottom: 8px;"><span style="color: ${complications.Atelectasis ? '#ef4444' : '#10b981'}; font-weight: bold;">${complications.Atelectasis ? '⚠️' : '✅'} ปอดแฟบ/ปอดอักเสบ:</span> ${complications.Atelectasis ? 'พบ' : 'ไม่พบ'}</li>
+                        <li style="margin-bottom: 8px;"><span style="color: ${complications.Constipation ? '#ef4444' : '#10b981'}; font-weight: bold;">${complications.Constipation ? '⚠️' : '✅'} ท้องผูก/ปัญหาขับถ่าย:</span> ${complications.Constipation ? 'พบ' : 'ไม่พบ'}</li>
+                        <li style="margin-bottom: 8px;"><span style="font-weight: bold;">อาการอื่น ๆ:</span> ${complications.OtherSymptoms || '- ไม่มีระบุ -'}</li>
+                    </ul>
+                `;
                 
-                {Object.keys(savedPatients).length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">ยังไม่มีข้อมูลผู้ป่วยที่ถูกบันทึกไว้</p>
-                ) : (
-                    <div className="space-y-3">
-                        {Object.keys(savedPatients).map((key) => {
-                            const patient = savedPatients[key];
-                            const totalItems = Object.values(assessmentData).reduce((sum, data) => sum + data.items.length, 0);
-                            const totalChecked = Object.values(assessmentData).reduce((sum, data) => sum + data.items.filter(item => patient.checks[item.id]).length, 0);
-                            const lastUpdateDate = new Date(patient.lastUpdate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const surgeryDateText = formatDateForReport(patientInfo.surgeryDate);
+                const dischargeDateText = formatDateForReport(patientInfo.dischargeDate);
+
+
+                const totalItems = Object.values(assessmentData).reduce((sum, data) => sum + data.items.length, 0);
+                const totalChecked = Object.values(assessmentData).reduce((sum, data) => sum + data.items.filter(item => checkedItems[item.id]).length, 0);
+                const totalPercentage = totalItems > 0 ? Math.round((totalChecked / totalItems) * 100) : 0;
+
+                content.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
+                        <h1 style="color: #1e40af; margin-bottom: 10px; font-size: 28px;">แบบประเมิน Early Ambulate และติดตามอาการ</h1>
+                        <p style="color: #64748b; font-size: 14px;">รายงานการประเมินผู้ป่วย</p>
+                    </div>
+                    <div style="background-color: #f1f5f9; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                        <h2 style="color: #334155; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;">ข้อมูลผู้ป่วย</h2>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr><td style="padding: 8px 0; color: #475569; font-weight: 600; width: 180px;">ชื่อ-นามสกุล:</td><td style="padding: 8px 0; color: #1e293b;">${patientInfo.firstName} ${patientInfo.lastName}</td></tr>
+                            <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">AN:</td><td style="padding: 8px 0; color: #1e293b;">${patientInfo.an}</td></tr>
+                            <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">ประเภทการผ่าตัด:</td><td style="padding: 8px 0; color: #1e293b;">${patientInfo.surgeryType || '- ไม่มีระบุ -'}</td></tr>
+                            <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">วันผ่าตัด:</td><td style="padding: 8px 0; color: #1e293b;">${surgeryDateText}</td></tr> 
+                            <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">วันจำหน่าย (Discharge):</td><td style="padding: 8px 0; color: #1e293b;">${dischargeDateText}</td></tr> 
+                            <tr><td style="padding: 8px 0; color: #475569; font-weight: 600;">วันที่ออกรายงาน:</td><td style="padding: 8px 0; color: #1e293b;">${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</td></tr>
+                        </table>
+                    </div>
+                    ${complicationHTML}
+                    ${summaryHTML}
+                    <div style="background-color: #ecfdf5; border: 2px solid #10b981; border-radius: 10px; padding: 20px; margin-top: 30px;">
+                        <h2 style="color: #065f46; margin-bottom: 15px; font-size: 20px;">สรุปผลการประเมินรวม (Early Ambulate Score)</h2>
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; font-weight: 700; color: #10b981; margin-bottom: 10px;">${totalChecked}/${totalItems}</div>
+                            <div style="font-size: 24px; color: #047857;">${totalPercentage}% เสร็จสมบูรณ์</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px;">
+                        <p>รายงานนี้สร้างโดยระบบ Early Ambulate Assessment</p>
+                        <p>© ${new Date().getFullYear()} - ระบบประเมินผู้ป่วย</p>
+                    </div>
+                `;
+
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                printWindow.document.write(`<html><head><title>รายงานการประเมิน - ${patientInfo.firstName} ${patientInfo.lastName}</title><style>@media print { body { margin: 0; padding: 0; } @page { margin: 1cm; } } body { font-family: Arial, sans-serif; }</style></head><body>${content.innerHTML}</body></html>`);
+                printWindow.document.close();
+                setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
+            };
+
+            // --- JSX/HTML Structure ---
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
+                    <Alert message={alertState.message} type={alertState.type} onClose={() => setAlertState({ message: '', type: '', key: 0 })} key={alertState.key} />
+                    {isLoading && (
+                        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-40">
+                            <div className="bg-white p-6 rounded-xl shadow-2xl flex items-center gap-3">
+                                <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                                <span className="text-primary font-semibold">กำลังประมวลผล...</span>
+                            </div>
+                        </div>
+                    )}
+                    <div className="max-w-4xl mx-auto">
+                        
+                        <div className="text-center mb-8 pt-8 no-print">
+                            <div className="inline-flex items-center gap-3 mb-4">
+                                <FileText className="w-10 h-10 text-primary" />
+                                <h1 className="text-3xl font-extrabold text-gray-800">แบบประเมิน Early Ambulate</h1>
+                            </div>
+                            <p className="text-secondary text-sm">ออกแบบด้วย React & Tailwind CSS</p>
+                        </div>
+
+                        {/* Patient Information Form */}
+                        <div className="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-3">
+                                <User className="w-6 h-6 text-primary" />
+                                <h2 className="text-xl font-bold text-gray-800">ข้อมูลผู้ป่วยที่กำลังประเมิน</h2>
+                            </div>
                             
-                            return (
-                                <div key={key} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200 hover:shadow-md transition-shadow">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-lg font-semibold text-gray-800 truncate">
-                                            {patient.info.firstName} {patient.info.lastName} 
-                                            <span className="text-sm font-medium text-purple-600 ml-2">(AN: {key})</span>
-                                        </p>
-                                        <p className="text-xs text-gray-600 mt-1">อัปเดตล่าสุด: {lastUpdateDate}</p>
-                                        <p className="text-xs text-gray-700 mt-1">ความคืบหน้ารวม: <span className="font-bold text-purple-700">{totalChecked}/{totalItems}</span></p>
-                                    </div>
-                                    <div className="flex gap-2 ml-4 flex-shrink-0">
-                                        <button
-                                            onClick={() => loadPatient(key)}
-                                            className="flex items-center gap-1 px-3 py-2 bg-purple-500 text-white rounded-lg font-semibold text-sm hover:bg-purple-600 transition-colors shadow-md"
-                                        >
-                                            <Edit className="w-4 h-4" />แก้ไข
-                                        </button>
-                                        
-                                        {/* ปุ่ม: ลบข้อมูล (ลบเฉพาะในรายการแสดงผล) */}
-                                        <button
-                                            onClick={() => deletePatient(key, `${patient.info.firstName} ${patient.info.lastName}`)}
-                                            className="flex items-center gap-1 px-3 py-2 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-colors shadow-md"
-                                        >
-                                            <Trash2 className="w-4 h-4" />ลบ
-                                        </button>
+                            {/* Row 1: Core Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4"> 
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">ชื่อ-นามสกุล <span className="text-red-500">*</span></label>
+                                    <div className="flex gap-2">
+                                        <input type="text" value={patientInfo.firstName} onChange={(e) => setPatientInfo({...patientInfo, firstName: e.target.value})} placeholder="ชื่อ" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none transition-colors" />
+                                        <input type="text" value={patientInfo.lastName} onChange={(e) => setPatientInfo({...patientInfo, lastName: e.target.value})} placeholder="นามสกุล" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none transition-colors" />
                                     </div>
                                 </div>
-                            );
-                        })}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">AN <span className="text-red-500">*</span></label>
+                                    <input type="text" value={patientInfo.an} onChange={(e) => setPatientInfo({...patientInfo, an: e.target.value})} placeholder="ระบุ AN" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none transition-colors" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">ประเภทการผ่าตัด</label>
+                                    <div className="relative">
+                                        <input type="text" value={patientInfo.surgeryType} onChange={(e) => setPatientInfo({...patientInfo, surgeryType: e.target.value})} placeholder="เช่น TKR, THR, ACDF" className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none transition-colors pr-10" />
+                                        <Scissors className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Row 2: Dates */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4"> 
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">วันผ่าตัด</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="date" 
+                                            value={patientInfo.surgeryDate} 
+                                            onChange={(e) => setPatientInfo({...patientInfo, surgeryDate: e.target.value})} 
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none transition-colors pr-10" 
+                                        />
+                                        <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
+                                    </div>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">วันจำหน่าย (Discharge)</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="date" 
+                                            value={patientInfo.dischargeDate} 
+                                            onChange={(e) => setPatientInfo({...patientInfo, dischargeDate: e.target.value})} 
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none transition-colors pr-10" 
+                                        />
+                                        <Calendar className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Complication Monitoring */}
+                        <div className="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-3">
+                                <Thermometer className="w-6 h-6 text-danger" />
+                                <h2 className="text-xl font-bold text-gray-800">🔴 อาการและภาวะแทรกซ้อนที่ต้องเฝ้าระวัง</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                {/* DVT */}
+                                <div 
+                                    onClick={() => handleComplicationCheck('DVT')} 
+                                    className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors 
+                                    ${complications.DVT ? 'bg-red-100 border-danger shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-red-300'}`}
+                                >
+                                    <span className={`font-semibold ${complications.DVT ? 'text-danger' : 'text-gray-700'}`}>DVT (ลิ่มเลือดอุดตัน)</span>
+                                    {complications.DVT ? <AlertCircle className="w-5 h-5 text-danger ml-auto" /> : <Square className="w-5 h-5 text-secondary ml-auto" />}
+                                </div>
+                                {/* Atelectasis */}
+                                <div 
+                                    onClick={() => handleComplicationCheck('Atelectasis')} 
+                                    className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors 
+                                    ${complications.Atelectasis ? 'bg-red-100 border-danger shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-red-300'}`}
+                                >
+                                    <span className={`font-semibold ${complications.Atelectasis ? 'text-danger' : 'text-gray-700'}`}>ปอดแฟบ/ปอดอักเสบ</span>
+                                    {complications.Atelectasis ? <AlertCircle className="w-5 h-5 text-danger ml-auto" /> : <Square className="w-5 h-5 text-secondary ml-auto" />}
+                                </div>
+                                {/* Constipation */}
+                                <div 
+                                    onClick={() => handleComplicationCheck('Constipation')} 
+                                    className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors 
+                                    ${complications.Constipation ? 'bg-red-100 border-danger shadow-lg' : 'bg-gray-50 border-gray-200 hover:border-red-300'}`}
+                                >
+                                    <span className={`font-semibold ${complications.Constipation ? 'text-danger' : 'text-gray-700'}`}>ท้องผูก/ปัญหาขับถ่าย</span>
+                                    {complications.Constipation ? <AlertCircle className="w-5 h-5 text-danger ml-auto" /> : <Square className="w-5 h-5 text-secondary ml-auto" />}
+                                </div>
+                            </div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 mt-4">อาการ/หมายเหตุอื่น ๆ:</label>
+                            <textarea
+                                value={complications.OtherSymptoms}
+                                onChange={(e) => setComplications({...complications, OtherSymptoms: e.target.value})}
+                                placeholder="ระบุอาการอื่น ๆ เช่น ข้อติด, แผลกดทับ, ไข้, อื่น ๆ"
+                                rows="2"
+                                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-danger focus:outline-none transition-colors"
+                            ></textarea>
+                        </div>
+
+                        {/* Export & Save Buttons */}
+                        <div className="flex flex-col md:flex-row justify-end gap-3 mb-8 no-print">
+                            {/* ปุ่ม: เริ่มผู้ป่วยรายใหม่ (Reset) */}
+                            <button onClick={resetAssessment} className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 bg-red-500 text-white hover:bg-red-600 hover:shadow-xl transform hover:scale-105">
+                                <Trash2 className="w-5 h-5" />ล้างฟอร์มปัจจุบัน
+                            </button>
+                            
+                            {/* ปุ่ม: บันทึกผู้ป่วยปัจจุบัน (Save/Update) - **มีการส่งข้อมูลไป Google Sheet ในฟังก์ชันนี้** */}
+                            <button
+                                onClick={saveCurrentPatient}
+                                disabled={!isFormValid || isLoading}
+                                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 ${isFormValid && !isLoading ? 'bg-accent text-white hover:bg-amber-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                            >
+                                <Save className="w-5 h-5" />
+                                บันทึก/อัปเดต & ส่งข้อมูล
+                            </button>
+
+                            {/* ปุ่ม: ออกรายงาน PDF */}
+                            <button onClick={generatePDF} disabled={!isFormValid} className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 ${isFormValid ? 'bg-success text-white hover:bg-green-600 hover:shadow-xl transform hover:scale-105' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                                <Download className="w-5 h-5" />ออกรายงาน PDF
+                            </button>
+                        </div>
+                        
+                        {/* Day Selection Tabs */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 no-print">
+                            {Object.entries(assessmentData).map(([key, data]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setSelectedDay(key)}
+                                    className={`p-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${selectedDay === key ? `bg-gradient-to-r ${data.color} text-white shadow-xl` : 'bg-white text-gray-700 hover:shadow-xl'}`}
+                                >
+                                    <div className="font-bold text-sm mb-1">{data.title}</div>
+                                    <div className="text-xs opacity-90">{data.subtitle}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Assessment Card (Checklist) */}
+                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden mb-6">
+                            <div className={`bg-gradient-to-r ${currentAssessment.color} p-6 text-white`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-2xl font-bold mb-2">{currentAssessment.title}</h2>
+                                        <p className="text-white/90">{currentAssessment.subtitle}</p>
+                                    </div>
+                                    <Clock className="w-12 h-12 opacity-80" />
+                                </div>
+                            </div>
+
+                            {/* Checklist Items */}
+                            <div className="p-6 space-y-3">
+                                {currentAssessment.items.map((item, index) => (
+                                    <div key={item.id} onClick={() => handleCheck(item.id)} className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${checkedItems[item.id] ? 'bg-green-50 border-success' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
+                                        <div className="flex-shrink-0 mt-1">
+                                            {checkedItems[item.id] ? (<CheckSquare className="w-6 h-6 text-success" />) : (<Square className="w-6 h-6 text-secondary" />)}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className={`text-xs font-bold px-2 py-1 rounded ${checkedItems[item.id] ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600'}`}>ข้อ {index + 1}</span>
+                                            </div>
+                                            <p className={`text-base leading-relaxed ${checkedItems[item.id] ? 'text-gray-700 font-medium' : 'text-gray-600'}`}>{item.text}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ประวัติผู้ป่วยที่บันทึกไว้ (ดึงจาก Google Sheet) */}
+                        <div className="bg-white rounded-xl shadow-2xl p-6 mb-12 no-print">
+                            <div className="flex items-center justify-between mb-4 border-b pb-3">
+                                <div className="flex items-center gap-2">
+                                    <Search className="w-6 h-6 text-purple-600" />
+                                    <h3 className="text-xl font-bold text-gray-800">ประวัติผู้ป่วยที่บันทึกไว้ ({Object.keys(savedPatients).length} ราย)</h3>
+                                </div>
+                                <button onClick={fetchPatientsFromSheet} disabled={isLoading} className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800">
+                                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                    {isLoading ? 'กำลังโหลด...' : 'โหลดข้อมูลล่าสุด'}
+                                </button>
+                            </div>
+                            
+                            {Object.keys(savedPatients).length === 0 ? (
+                                <p className="text-secondary text-center py-4">ยังไม่มีข้อมูลผู้ป่วยที่ถูกบันทึกไว้</p>
+                            ) : (
+                                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                                    {Object.keys(savedPatients).map((key) => {
+                                        const patient = savedPatients[key];
+                                        const totalItems = Object.values(assessmentData).reduce((sum, data) => sum + data.items.length, 0);
+                                        const totalChecked = Object.values(assessmentData).reduce((sum, data) => sum + data.items.filter(item => patient.checks[item.id]).length, 0);
+                                        const lastUpdateDate = new Date(patient.lastUpdate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                        
+                                        return (
+                                            <div key={key} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200 hover:shadow-lg transition-shadow">
+                                                <div className="flex-1 min-w-0 mb-2 md:mb-0">
+                                                    <p className="text-lg font-semibold text-gray-800 truncate">
+                                                        {patient.info.firstName} {patient.info.lastName} 
+                                                        <span className="text-sm font-medium text-purple-600 ml-2">(AN: {key})</span>
+                                                    </p>
+                                                    <p className="text-xs text-gray-600 mt-1">อัปเดตล่าสุด: {lastUpdateDate}</p>
+                                                    <p className="text-xs text-gray-700 mt-1">ความคืบหน้ารวม: <span className="font-bold text-purple-700">{totalChecked}/{totalItems}</span></p>
+                                                </div>
+                                                <div className="flex gap-2 ml-0 md:ml-4 flex-shrink-0 w-full md:w-auto">
+                                                    <button
+                                                        onClick={() => loadPatient(key)}
+                                                        className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-500 text-white rounded-lg font-semibold text-sm hover:bg-purple-600 transition-colors shadow-md flex-1"
+                                                    >
+                                                        <Edit className="w-4 h-4" />แก้ไข
+                                                    </button>
+                                                    
+                                                    {/* ปุ่ม: ลบข้อมูล (ส่งคำสั่งไป Apps Script) */}
+                                                    <button
+                                                        onClick={() => deletePatient(key, `${patient.info.firstName} ${patient.info.lastName}`)}
+                                                        className="flex items-center justify-center gap-1 px-3 py-2 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-colors shadow-md flex-1"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />ลบ
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                        
                     </div>
-                )}
-            </div>
-            
-          </div>
-        </div>
-      );
-    }
+                </div>
+            );
+        }
 
-    // Render Component เข้าสู่ DOM
-    const container = document.getElementById('root');
-    const root = createRoot(container);
-    root.render(<AmbulateAssessment />);
-  </script>
-
+        // Render Component เข้าสู่ DOM
+        const container = document.getElementById('root');
+        const root = createRoot(container);
+        root.render(<AmbulateAssessment />);
+    </script>
 </body>
 </html>
