@@ -82,7 +82,7 @@
 
         // --- GOOGLE APPS SCRIPT URL (***กรุณาเปลี่ยน URL นี้ด้วย Web App URL ล่าสุด***) ---
         // ***สำคัญ: ต้อง Deploy Apps Script ตามโค้ดที่ให้ในส่วนที่ 3 ก่อน***
-        const GOOGLE_SHEET_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; 
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec"; 
 
         const initialPatientState = { firstName: '', lastName: '', an: '', surgeryType: '', surgeryDate: '', dischargeDate: '' }; 
         const initialComplicationState = { DVT: false, Atelectasis: false, Constipation: false, OtherSymptoms: '' };
@@ -97,7 +97,7 @@
 
             if (!message) return null;
 
-             return (
+            return (
                 <div 
                     className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-50 transition-opacity duration-300 flex items-center gap-3 ${colors[type]}`}
                     role="alert"
