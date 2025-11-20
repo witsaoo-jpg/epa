@@ -69,7 +69,7 @@
     };
 
     // --- GOOGLE APPS SCRIPT URL (***กรุณาเปลี่ยน URL นี้ด้วย Web App URL ล่าสุด***) ---
-    const GOOGLE_SHEET_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"; 
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec"; 
     
     // --- โค้ด React Component หลัก ---
     function AmbulateAssessment() {
@@ -83,34 +83,24 @@
           DVT: false, Atelectasis: false, Constipation: false, OtherSymptoms: ''
       });
 
-      // savedPatients จะถูกดึงมาจาก Google Sheet
+      // savedPatients จะถูกดึงมาจาก Google Sheet แทน Local Storage
       const [savedPatients, setSavedPatients] = useState({}); 
       const initialPatientState = { firstName: '', lastName: '', an: '', surgeryType: '', surgeryDate: '', dischargeDate: '' }; 
       const initialComplicationState = { DVT: false, Atelectasis: false, Constipation: false, OtherSymptoms: '' };
 
-      
-      // [ใหม่]: ฟังก์ชันคำนวณคะแนนแยกตามวัน
-      const getDailyScores = () => {
-          const dailyScores = {};
-          Object.entries(assessmentData).forEach(([dayKey, data]) => {
-              const total = data.items.length;
-              const checked = data.items.filter(item => checkedItems[item.id]).length;
-              dailyScores[dayKey] = `${checked}/${total}`;
-          });
-          return dailyScores;
-      };
-
+      const LOCAL_STORAGE_KEY = 'ambulate_patients_db';
 
       // --- ฟังก์ชันการจัดการข้อมูล Local Storage และ Google Sheet ---
       
-      // [ปรับปรุง]: ดึงข้อมูลผู้ป่วยทั้งหมดจาก Google Sheet
+      // [ใหม่]: ดึงข้อมูลผู้ป่วยทั้งหมดจาก Google Sheet
       const fetchPatientsFromSheet = async () => {
-          if (GOOGLE_SHEET_URL === "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec") {
+          if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
               console.warn("GOOGLE_SHEET_URL ยังไม่ได้ถูกกำหนด!");
               return; 
           }
 
           try {
+              // ใช้ GET Request เพื่อดึงข้อมูลทั้งหมด
               const response = await fetch(GOOGLE_SHEET_URL, {
                   method: 'GET',
                   mode: 'cors', // ใช้ 'cors' สำหรับ GET
@@ -135,6 +125,7 @@
         if (patientData) {
             if (window.confirm(`ต้องการโหลดข้อมูลผู้ป่วย: ${patientData.info.firstName} ${patientData.info.lastName} (AN: ${patientKey}) เพื่อแก้ไขหรือไม่? ข้อมูลปัจจุบันจะถูกแทนที่!`)) {
                 
+                // ตรวจสอบและแปลงวันที่ให้อยู่ในรูปแบบ YYYY-MM-DD สำหรับ input type="date"
                 const loadedInfo = { 
                     ...initialPatientState, 
                     ...patientData.info,
@@ -151,10 +142,11 @@
         }
       };
 
-      // [ลบ]: ฟังก์ชันลบข้อมูล (ลบเฉพาะในรายการแสดงผล)
+      // [ปรับปรุง]: ลบข้อมูล (ลบเฉพาะในรายการแสดงผล เพราะไม่ได้ลบใน Sheet)
       const deletePatient = (patientKey, patientName) => {
         if (window.confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลผู้ป่วย: ${patientName} (AN: ${patientKey})? ข้อมูลนี้จะถูกลบออกจากรายการประวัติผู้ป่วยในเครื่องเท่านั้น และจะไม่ถูกลบออกจาก Google Sheet!`)) {
             
+            // ใช้ Destructuring เพื่อลบ Key นั้นออก
             const { [patientKey]: deleted, ...restOfPatients } = savedPatients;
 
             setSavedPatients(restOfPatients);
@@ -169,6 +161,7 @@
         }
       };
       
+      // [ปรับปรุง]: ส่งข้อมูลไป Apps Script (Apps Script จะจัดการการ Append/Update เอง)
       const sendToGoogleSheet = async (data) => {
           if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
               console.warn("GOOGLE_SHEET_URL ยังไม่ได้ถูกกำหนด!");
@@ -199,12 +192,10 @@
             return;
         }
 
-        // [แก้ไข]: เพิ่ม Daily Scores เข้าไปใน Data ที่จะส่ง
         const patientDataToSave = {
             info: patientInfo,
             checks: checkedItems,
             complications: complications,
-            dailyScores: getDailyScores(), // <--- NEW!
             lastUpdate: new Date().toISOString()
         };
 
@@ -264,6 +255,7 @@
           if (!dateString) return '- ไม่มีระบุ -';
           try {
               const date = new Date(dateString);
+              // ต้องเพิ่ม 1 วันเพื่อชดเชย Timezone effect เมื่อใช้ input type="date"
               date.setDate(date.getDate() + 1); 
               return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric'});
           } catch (e) {
