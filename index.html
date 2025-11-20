@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>แบบประเมิน Early Ambulate และติดตามอาการ (พร้อมฟังก์ชันลบ)</title>
+  <title>แบบประเมิน Early Ambulate และติดตามอาการ (ฉบับแก้ไข)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -68,7 +68,7 @@
         Calendar: (props) => <IconComponent name="Calendar" {...props} />,
     };
 
-    // --- GOOGLE APPS SCRIPT URL (***กรุณาเปลี่ยน URL นี้ด้วย Web App URL ที่คุณ Deploy***) ---
+    // --- GOOGLE APPS SCRIPT URL (***กรุณาเปลี่ยน URL นี้ด้วย Web App URL ล่าสุด***) ---
     const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec"; 
     
     // --- โค้ด React Component หลัก ---
@@ -112,28 +112,27 @@
         }
       };
 
-      // *** ฟังก์ชันใหม่: ลบข้อมูลผู้ป่วยจาก Local Storage ***
-     // ต้องแน่ใจว่าฟังก์ชันนี้ถูกประกาศไว้ใน AmbulateAssessment Component
-const deletePatient = (patientKey, patientName) => { // ต้องรับ 2 ค่า
-  if (window.confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลผู้ป่วย: ${patientName} (AN: ${patientKey})? ข้อมูลนี้จะหายไปจากเครื่องทันที!`)) {
-      
-      const { [patientKey]: deleted, ...restOfPatients } = savedPatients;
+      const deletePatient = (patientKey, patientName) => {
+        if (window.confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลผู้ป่วย: ${patientName} (AN: ${patientKey})? ข้อมูลนี้จะหายไปจากเครื่องทันที!`)) {
+            
+            // ใช้ Destructuring เพื่อลบ Key นั้นออก
+            const { [patientKey]: deleted, ...restOfPatients } = savedPatients;
 
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(restOfPatients));
-      setSavedPatients(restOfPatients);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(restOfPatients));
+            setSavedPatients(restOfPatients);
 
-      if (patientInfo.an === patientKey) {
-          setPatientInfo(initialPatientState);
-          setCheckedItems({});
-          setComplications(initialComplicationState);
-      }
+            if (patientInfo.an === patientKey) {
+                setPatientInfo(initialPatientState);
+                setCheckedItems({});
+                setComplications(initialComplicationState);
+            }
 
-      alert(`🗑️ ลบข้อมูลผู้ป่วย AN: ${patientKey} เรียบร้อยแล้ว`);
-  }
-};
+            alert(`🗑️ ลบข้อมูลผู้ป่วย AN: ${patientKey} เรียบร้อยแล้ว`);
+        }
+      };
       
       const sendToGoogleSheet = async (data) => {
-          if (GOOGLE_SHEET_URL === "https://script.google.com/macros/s/AKfycby7G1aP5QRtLvNi4eSYJQ8mbmzcNVD74UXGL-BRP_TexMF1HkuITyf0Ep_CU0FWO4TX/exec") {
+          if (GOOGLE_SHEET_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL") {
               console.warn("GOOGLE_SHEET_URL ยังไม่ได้ถูกกำหนด!");
               return true; 
           }
@@ -141,9 +140,9 @@ const deletePatient = (patientKey, patientName) => { // ต้องรับ 2 
           try {
               const response = await fetch(GOOGLE_SHEET_URL, {
                   method: 'POST',
-                  mode: 'no-cors',
+                  mode: 'no-cors', // สำคัญสำหรับ Google Apps Script
                   headers: {
-                      'Content-Type': 'application/json',
+                      'Content-Type': 'application/json', // แม้จะใช้ no-cors แต่ควรระบุ
                   },
                   body: JSON.stringify(data)
               });
@@ -541,7 +540,7 @@ const deletePatient = (patientKey, patientName) => { // ต้องรับ 2 
                                             <Edit className="w-4 h-4" />แก้ไข
                                         </button>
                                         
-                                        {/* *** ปุ่มใหม่: ลบข้อมูล *** */}
+                                        {/* ปุ่ม: ลบข้อมูล (ตรวจสอบว่ามีการเรียกใช้ฟังก์ชัน deletePatient ถูกต้อง) */}
                                         <button
                                             onClick={() => deletePatient(key, `${patient.info.firstName} ${patient.info.lastName}`)}
                                             className="flex items-center gap-1 px-3 py-2 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-colors shadow-md"
