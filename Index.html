@@ -1,1 +1,717 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>แบบประเมิน Safety for Ambulate (ประสิทธิภาพสูงสุด)</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    /* Custom CSS */
+    @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&family=Sukhumvit+Set:wght@400;700&display=swap');
 
+    body {
+      font-family: 'Sukhumvit Set', 'Kanit', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+    
+    /* Progress Circle Styles */
+    .progress-circle {
+      position: relative; width: 60px; height: 60px; border-radius: 50%;
+      background-color: #e2e8f0; display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 8px; font-size: 0.875rem; font-weight: 700; color: #475569;
+    }
+    .progress-circle::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(var(--progress-color) var(--progress-deg), #cbd5e1 var(--progress-deg));
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 8px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 8px), #fff calc(100% - 8px));
+    }
+    .progress-circle-value { z-index: 1; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    
+    .data-list-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1.5fr 1fr;
+      gap: 10px;
+    }
+    
+    /* Optimization for Loaders */
+    .loading-overlay {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(255, 255, 255, 0.9);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10; transition: opacity 0.3s;
+        border-radius: 0.75rem;
+    }
+  </style>
+</head>
+<body class="hide-scrollbar">
+
+<div id="app" class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
+  <div class="max-w-4xl mx-auto space-y-8 pb-12">
+    
+    <div class="text-center pt-8 animate-fadeIn">
+      <div class="inline-flex items-center gap-4 mb-4">
+        <i data-lucide="heart-pulse" class="w-12 h-12 text-pink-600"></i>
+        <h1 class="text-5xl font-extrabold text-gray-900 leading-tight">
+          Safety for Ambulate
+        </h1>
+      </div>
+      <p class="text-gray-700 text-xl max-w-2xl mx-auto mt-2">
+        แบบประเมินและฐานข้อมูลการเคลื่อนไหวของผู้ป่วย
+      </p>
+    </div>
+
+    <div class="flex justify-center mb-6">
+      <button 
+        id="modeAssess"
+        onclick="setAppMode('assessment')" 
+        class="px-6 py-2 rounded-l-full font-semibold transition-colors duration-300 bg-blue-600 text-white shadow-md"
+      >
+        <i data-lucide="clipboard-list" class="w-5 h-5 inline-block mr-2"></i> หน้าประเมิน
+      </button>
+      <button 
+        id="modeList"
+        onclick="setAppMode('list')" 
+        class="px-6 py-2 rounded-r-full font-semibold transition-colors duration-300 bg-white text-gray-700 hover:bg-gray-100"
+      >
+        <i data-lucide="list-checks" class="w-5 h-5 inline-block mr-2"></i> รายการบันทึก
+      </button>
+    </div>
+
+    <div id="assessmentView" class="animate-fadeIn space-y-8">
+      
+      <form id="assessmentForm" onsubmit="return false;">
+        <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+          <div class="flex items-center gap-3 mb-6">
+            <i data-lucide="user" class="w-7 h-7 text-blue-600"></i>
+            <h2 class="text-2xl font-bold text-gray-800">ข้อมูลผู้ป่วย</h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div class="md:col-span-2">
+                <label for="firstName" class="block text-sm font-semibold text-gray-700 mb-2">ชื่อ <span class="text-red-500">*</span></label>
+                <input type="text" id="firstName" name="firstName" placeholder="ชื่อจริง" required class="input-field"/>
+            </div>
+            <div class="md:col-span-2">
+                <label for="lastName" class="block text-sm font-semibold text-gray-700 mb-2">นามสกุล <span class="text-red-500">*</span></label>
+                <input type="text" id="lastName" name="lastName" placeholder="นามสกุล" required class="input-field"/>
+            </div>
+            <div>
+                <label for="an" class="block text-sm font-semibold text-gray-700 mb-2">AN <span class="text-red-500">*</span></label>
+                <div class="flex gap-2">
+                    <input type="text" id="an" name="an" placeholder="รหัส AN" required class="input-field focus:border-purple-500 focus:ring-purple-500"/>
+                    <button type="button" onclick="loadRecordByAN()" title="ค้นหาและโหลดข้อมูลเดิมมาแก้ไข" class="bg-purple-500 text-white rounded-xl px-3 hover:bg-purple-600 transition duration-200 flex items-center justify-center">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label for="surgeryDate" class="block text-sm font-semibold text-gray-700 mb-2">วันที่ผ่าตัด</label>
+                <div class="flex gap-2">
+                    <input type="date" id="surgeryDate" name="surgeryDate" class="input-field"/>
+                    <button type="button" onclick="setTodayDate('surgeryDate')" title="ประทับวันที่ปัจจุบัน" class="bg-gray-200 text-gray-700 rounded-xl px-3 hover:bg-gray-300 transition duration-200 text-sm font-semibold flex items-center justify-center">
+                        วันนี้
+                    </button>
+                </div>
+            </div>
+            <div class="md:col-span-2">
+                <label for="dischargeDate" class="block text-sm font-semibold text-gray-700 mb-2">วันที่จำหน่าย</label>
+                <div class="flex gap-2">
+                    <input type="date" id="dischargeDate" name="dischargeDate" class="input-field"/>
+                    <button type="button" onclick="setTodayDate('dischargeDate')" title="ประทับวันที่ปัจจุบัน" class="bg-gray-200 text-gray-700 rounded-xl px-3 hover:bg-gray-300 transition duration-200 text-sm font-semibold flex items-center justify-center">
+                        วันนี้
+                    </button>
+                </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <div class="flex justify-between items-center animate-fadeIn delay-200">
+        <button
+          id="resetButton"
+          onclick="resetForm()"
+          class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all duration-300 text-gray-700 bg-gray-200 hover:bg-gray-300 hover:shadow-lg transform hover:scale-105"
+          title="รีเซ็ตข้อมูลและรายการที่เลือกทั้งหมด"
+        >
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          รีเซ็ตทั้งหมด
+        </button>
+
+        <button
+          id="submitButton"
+          onclick="submitDataToSheet()"
+          class="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800 hover:shadow-xl transform hover:scale-105"
+          title="บันทึกข้อมูลและสร้างรายงาน PDF"
+        >
+          <i data-lucide="save" class="w-5 h-5"></i>
+          <span id="submitButtonText">บันทึกข้อมูลและออกรายงาน</span>
+        </button>
+      </div>
+
+      <div id="dayTabs" class="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fadeIn delay-300">
+        </div>
+
+      <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 animate-fadeIn delay-400">
+        <div id="cardHeader" class="p-6 text-white"></div>
+        <div class="bg-gray-50 p-5 border-b border-gray-100">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-base font-semibold text-gray-700">ความคืบหน้าการประเมิน</span>
+            <span id="progressBarText" class="text-base font-bold text-blue-600">0%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3.5 overflow-hidden">
+            <div id="progressBar" class="h-full transition-all duration-500 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+        <div id="checklistItems" class="p-6 space-y-4"></div>
+        <div class="bg-blue-50 border-t-2 border-blue-200 p-5 rounded-b-3xl">
+          <div class="flex items-start gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+            <p class="text-sm text-gray-700">
+              <strong>หมายเหตุ:</strong> กรุณาทำตามขั้นตอนทุกข้อเพื่อความปลอดภัยของผู้ป่วย และบันทึกผลการประเมินทุกครั้ง
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-white rounded-3xl shadow-xl p-8 border border-gray-100 animate-fadeIn delay-500">
+        <div class="flex items-center gap-3 mb-6">
+          <i data-lucide="clipboard-check" class="w-7 h-7 text-green-600"></i>
+          <h3 class="text-2xl font-bold text-gray-800">สรุปผลการประเมินโดยรวม</h3>
+        </div>
+        <div id="summaryCard" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+      </div>
+    </div> 
+
+    <div id="listView" class="animate-fadeIn space-y-6 hidden relative">
+        <h2 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <i data-lucide="database" class="w-8 h-8 text-blue-600"></i> รายการบันทึกการประเมินทั้งหมด
+        </h2>
+        <div class="bg-white rounded-xl shadow-lg border border-gray-100 relative min-h-[200px]" id="listCardContainer">
+            
+            <div id="listLoadingOverlay" class="loading-overlay hidden rounded-xl">
+                <div class="text-center text-gray-700 flex flex-col items-center">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-600 mb-3"></i>
+                    <span class="font-semibold text-lg">กำลังโหลดข้อมูลรายการ...</span>
+                    <span class="text-sm text-gray-500">โปรดรอสักครู่เนื่องจากมีการดึงข้อมูลจำนวนมาก</span>
+                </div>
+            </div>
+
+            <div class="bg-gray-100 p-4 font-semibold text-gray-700 data-list-row border-b border-gray-300 rounded-t-xl">
+                <div class="py-2">AN</div>
+                <div class="py-2">ชื่อผู้ป่วย</div>
+                <div class="py-2">วันที่ (ผ่าตัด/จำหน่าย)</div>
+                <div class="py-2 text-center">การดำเนินการ</div>
+            </div>
+            
+            <div id="recordsListContainer" role="list">
+                <div class="p-4 text-center text-gray-500">กรุณากดปุ่ม "รายการบันทึก" เพื่อโหลดข้อมูล...</div>
+            </div>
+        </div>
+    </div> 
+
+  </div>
+  
+  <footer class="mt-10 py-6 text-center text-gray-600 text-sm border-t border-gray-200 bg-white shadow-inner rounded-t-xl">
+    <p>
+      Copyright 2025 by HealthCare Innovations (Development Version)
+    </p>
+  </footer>
+</div>
+
+<script>
+  // -------------------------------------------------------------
+  // Configuration & Styles
+  // -------------------------------------------------------------
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { 'gray-800': '#1f2937' }
+      }
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.input-field').forEach(el => {
+      el.classList.add('w-full', 'px-4', 'py-3', 'border-2', 'border-gray-200', 'rounded-xl', 'focus:border-blue-500', 'focus:ring-blue-500', 'focus:ring-1', 'outline-none', 'transition-all', 'duration-200', 'text-gray-800', 'placeholder-gray-400');
+    });
+    
+    // Initialize
+    loadStateFromLocalStorage();
+    renderApp();
+    lucide.createIcons();
+    
+    // Listeners
+    document.getElementById('assessmentForm').addEventListener('input', () => {
+        saveStateToLocalStorage();
+        renderSubmitButtonState();
+    });
+  });
+
+  // -------------------------------------------------------------
+  // Data Model & State
+  // -------------------------------------------------------------
+  let selectedDay = 'admission';
+  let checkedItems = {};
+  let appMode = 'assessment';
+
+  const assessmentData = {
+    admission: {
+      title: 'Admission Day', subtitle: 'วันที่รับผู้ป่วย', color: 'from-pink-500 to-pink-600', tailwindColor: 'text-pink-600', progressColor: '#ec4899', items: [{ id: 'a1', text: 'ให้ผู้ป่วยฝึก Ambulate' }, { id: 'a2', text: 'พลิกตะแคงตัวซ้าย ขวา ทุก 2 ชม.' }, { id: 'a3', text: 'การนั่งหลังตรงทั้ง หัวเตียงศีรษะสูง 30-45 องศา นาน 15 นาที' }, { id: 'a4', text: 'การตะแคงตัวลุกนั่ง บนเตียงไม่พึ่งหัวเตียง และแกว่งขาข้างเตียง นาน 5 นาที' }, { id: 'a5', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อนลุกเดิน' }, { id: 'a6', text: 'ลุกเดิน' }]
+    },
+    surgery: {
+      title: 'วันที่ผ่าตัด', subtitle: 'หลัง OR ตามแพทย์สั่ง', color: 'from-blue-500 to-blue-600', tailwindColor: 'text-blue-600', progressColor: '#3b82f6', items: [{ id: 's1', text: 'หลังรับผู้ป่วยออก จาก OR' }, { id: 's2', text: 'พลิกตะแคงตัวซ้าย ขวา ทุก 2 ชม.' }, { id: 's3', text: 'การนั่งหลังตรงทั้ง หัวเตียงศีรษะสูง 30-45 องศา นาน 15 นาที 1 รอบ' }, { id: 's4', text: 'การตะแคงตัวลุก นั่งบนเตียงไม่พึ่งหัว เตียงและแกว่งขาข้าง เตียง นาน 5 นาที' }]
+    },
+    postop1: {
+      title: 'Post Op Day 1', subtitle: 'วันหลังผ่าตัด 1 วัน', color: 'from-purple-500 to-purple-600', tailwindColor: 'text-purple-600', progressColor: '#a855f7', items: [{ id: 'p1', text: 'การนั่งแกว่งขาข้าง เตียง ท้านาน 5 นาที' }, { id: 'p2', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อน ลุกเดิน' }, { id: 'p3', text: 'ลุกเดินพร้อม พยาบาลและญาติ ออกมานอกห้อง ลง บันทึกระยะทางที่ เดินได้เป็นเมตร ครั้ง ละอย่างน้อย 40 เมตร' }]
+    },
+    postop2: {
+      title: 'Post Op Day 2 ถึง Discharge', subtitle: 'วันหลังผ่าตัด 2 วันขึ้นไป', color: 'from-green-500 to-green-600', tailwindColor: 'text-green-600', progressColor: '#10b981', items: [{ id: 'd1', text: 'การนั่งแกว่งขาข้าง เตียง ท้านาน 5 นาที' }, { id: 'd2', text: 'ยืนข้างเตียง ยืนท้า อยู่กับที่ 10 ครั้ง ก่อน ลุกเดิน' }, { id: 'd3', text: 'ลุกเดินพร้อม พยาบาลและญาติ ออกมานอกห้อง ลง บันทึกระยะทางที่เดิน ได้เป็นเมตร ครั้งละ อย่างน้อย 60 เมตร' }]
+    }
+  };
+  
+  // -------------------------------------------------------------
+  // Helper Functions
+  // -------------------------------------------------------------
+  function getProgressCount(dayKey = selectedDay) {
+    const data = assessmentData[dayKey];
+    if (!data) return {checked: 0, total: 0};
+    const total = data.items.length;
+    const checked = data.items.filter(item => checkedItems[item.id]).length;
+    return {checked, total};
+  }
+
+  function getProgress(dayKey = selectedDay) {
+    const {checked, total} = getProgressCount(dayKey);
+    if (total === 0) return 0;
+    return Math.round((checked / total) * 100);
+  }
+
+  function handleCheck(itemId) {
+    checkedItems[itemId] = !checkedItems[itemId];
+    saveStateToLocalStorage();
+    renderApp(); 
+  }
+
+  function setSelectedDay(dayKey) {
+    selectedDay = dayKey;
+    saveStateToLocalStorage();
+    renderApp(); 
+  }
+
+  function getPatientInfo() {
+    return {
+      firstName: document.getElementById('firstName').value.trim(),
+      lastName: document.getElementById('lastName').value.trim(),
+      an: document.getElementById('an').value.trim(),
+      surgeryDate: document.getElementById('surgeryDate').value,
+      dischargeDate: document.getElementById('dischargeDate').value
+    };
+  }
+
+  function isFormValid() {
+    const info = getPatientInfo();
+    return info.firstName && info.lastName && info.an;
+  }
+
+  function setTodayDate(elementId) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      document.getElementById(elementId).value = `${year}-${month}-${day}`;
+      saveStateToLocalStorage();
+      renderSubmitButtonState();
+  }
+
+  // LocalStorage Handlers
+  function saveStateToLocalStorage() {
+      localStorage.setItem('selectedDay', selectedDay);
+      localStorage.setItem('checkedItems', JSON.stringify(checkedItems));
+      localStorage.setItem('form_firstName', document.getElementById('firstName').value);
+      localStorage.setItem('form_lastName', document.getElementById('lastName').value);
+      localStorage.setItem('form_an', document.getElementById('an').value);
+      localStorage.setItem('form_surgeryDate', document.getElementById('surgeryDate').value);
+      localStorage.setItem('form_dischargeDate', document.getElementById('dischargeDate').value);
+  }
+
+  function loadStateFromLocalStorage() {
+      if(localStorage.getItem('selectedDay')) selectedDay = localStorage.getItem('selectedDay');
+      if(localStorage.getItem('checkedItems')) checkedItems = JSON.parse(localStorage.getItem('checkedItems'));
+      document.getElementById('firstName').value = localStorage.getItem('form_firstName') || '';
+      document.getElementById('lastName').value = localStorage.getItem('form_lastName') || '';
+      document.getElementById('an').value = localStorage.getItem('form_an') || '';
+      document.getElementById('surgeryDate').value = localStorage.getItem('form_surgeryDate') || '';
+      document.getElementById('dischargeDate').value = localStorage.getItem('form_dischargeDate') || '';
+  }
+
+  function clearStateAndForm() {
+      checkedItems = {};
+      selectedDay = 'admission';
+      document.getElementById('firstName').value = '';
+      document.getElementById('lastName').value = '';
+      document.getElementById('an').value = '';
+      document.getElementById('surgeryDate').value = '';
+      document.getElementById('dischargeDate').value = '';
+      localStorage.clear();
+      renderApp();
+  }
+
+  function resetForm() {
+    Swal.fire({
+      title: 'คุณแน่ใจหรือไม่?',
+      text: "ข้อมูลทั้งหมดรวมถึงรายการที่เลือกจะถูกล้าง",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'ใช่, ล้างข้อมูล!',
+      cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        clearStateAndForm();
+        Swal.fire('ล้างแล้ว!', 'ข้อมูลถูกรีเซ็ตเรียบร้อย', 'success');
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // UI Mode & Rendering Functions
+  // -------------------------------------------------------------
+  function setAppMode(mode) {
+    appMode = mode;
+    const assessmentEl = document.getElementById('assessmentView');
+    const listEl = document.getElementById('listView');
+    const modeAssessBtn = document.getElementById('modeAssess');
+    const modeListBtn = document.getElementById('modeList');
+
+    if (mode === 'assessment') {
+      assessmentEl.classList.remove('hidden');
+      listEl.classList.add('hidden');
+      modeAssessBtn.classList.replace('bg-white', 'bg-blue-600');
+      modeAssessBtn.classList.replace('text-gray-700', 'text-white');
+      modeListBtn.classList.replace('bg-blue-600', 'bg-white');
+      modeListBtn.classList.replace('text-white', 'text-gray-700');
+    } else {
+      assessmentEl.classList.add('hidden');
+      listEl.classList.remove('hidden');
+      modeListBtn.classList.replace('bg-white', 'bg-blue-600');
+      modeListBtn.classList.replace('text-gray-700', 'text-white');
+      modeAssessBtn.classList.replace('bg-blue-600', 'bg-white');
+      modeAssessBtn.classList.replace('text-white', 'text-gray-700');
+      
+      // Load Data when entering list view
+      loadRecordsList(); 
+    }
+    renderApp();
+  }
+
+  function renderApp() {
+    if (appMode === 'assessment') {
+      renderTabs();
+      renderAssessmentCard();
+      renderSummary();
+      renderSubmitButtonState();
+    }
+  }
+
+  function renderTabs() {
+    const tabsContainer = document.getElementById('dayTabs');
+    tabsContainer.innerHTML = Object.entries(assessmentData).map(([key, data]) => {
+      const isSelected = key === selectedDay;
+      return `<button onclick="setSelectedDay('${key}')" class="p-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 ${isSelected ? `bg-gradient-to-r ${data.color} text-white shadow-xl` : 'bg-white text-gray-700 hover:shadow-xl'}" title="${data.subtitle}"><div class="font-bold text-base mb-1">${data.title}</div><div class="text-xs opacity-90">${data.subtitle}</div></button>`;
+    }).join('');
+  }
+
+  function renderAssessmentCard() {
+    const currentAssessment = assessmentData[selectedDay];
+    const { color } = currentAssessment;
+    const progress = getProgress();
+
+    document.getElementById('cardHeader').className = `bg-gradient-to-r ${color} p-6 text-white rounded-t-3xl`;
+    document.getElementById('cardHeader').innerHTML = `<div class="flex items-center justify-between"><div><h2 class="text-3xl font-bold mb-2">${currentAssessment.title}</h2><p class="text-white/90 text-lg">${currentAssessment.subtitle}</p></div><i data-lucide="clipboard-list" class="w-14 h-14 opacity-70"></i></div>`;
+    
+    document.getElementById('progressBarText').textContent = `${progress}%`;
+    const progressBar = document.getElementById('progressBar');
+    progressBar.style.width = `${progress}%`;
+    progressBar.className = `h-full bg-gradient-to-r ${color} transition-all duration-500 rounded-full`;
+
+    document.getElementById('checklistItems').innerHTML = currentAssessment.items.map((item, index) => {
+      const isChecked = checkedItems[item.id];
+      const checkIcon = isChecked 
+        ? '<i data-lucide="check-square" class="w-7 h-7 text-green-600"></i>' 
+        : '<i data-lucide="square" class="w-7 h-7 text-gray-400"></i>';
+        
+      return `<div onclick="handleCheck('${item.id}')" class="flex items-start gap-4 p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer hover:shadow-md ${isChecked ? 'bg-green-50 border-green-400 transform scale-[1.01]' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}"><div class="flex-shrink-0 mt-1">${checkIcon}</div><div class="flex-1"><div class="flex items-center gap-2 mb-1"><span class="text-xs font-bold px-3 py-1 rounded-full ${isChecked ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-600'}">ข้อ ${index + 1}</span></div><p class="text-base leading-relaxed ${isChecked ? 'text-gray-700 font-medium' : 'text-gray-600'}">${item.text}</p></div></div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+  
+  function renderSummary() {
+    const summaryCard = document.getElementById('summaryCard');
+    summaryCard.innerHTML = Object.entries(assessmentData).map(([key, data]) => {
+      const { checked, total } = getProgressCount(key);
+      const percentage = Math.round((checked / total) * 100);
+      const progressDegrees = (percentage / 100) * 360;
+      
+      return `<div class="text-center p-4 bg-gray-50 rounded-xl shadow-sm"><div class="progress-circle" style="--progress-color: ${data.progressColor}; --progress-deg: ${progressDegrees}deg; background-color: ${data.progressColor};"><span class="progress-circle-value">${percentage}%</span></div><div class="text-sm font-bold text-gray-700 mb-1">${data.title}</div><div class="text-xs text-gray-500">${checked}/${total} รายการ</div></div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+
+  function renderSubmitButtonState() {
+    const button = document.getElementById('submitButton');
+    const buttonText = document.getElementById('submitButtonText');
+    if (isFormValid()) {
+      button.disabled = false;
+      button.classList.remove('opacity-60', 'cursor-not-allowed', 'from-gray-400', 'to-gray-500');
+      button.classList.add('from-blue-600', 'to-indigo-700', 'hover:from-blue-700', 'hover:to-indigo-800');
+      buttonText.textContent = 'บันทึกข้อมูลและออกรายงาน';
+    } else {
+      button.disabled = true;
+      button.classList.add('opacity-60', 'cursor-not-allowed', 'from-gray-400', 'to-gray-500');
+      button.classList.remove('from-blue-600', 'to-indigo-700', 'hover:from-blue-700', 'hover:to-indigo-800');
+      buttonText.textContent = 'กรอกข้อมูลผู้ป่วยก่อน';
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Backend Integration (Google Apps Script)
+  // -------------------------------------------------------------
+  
+  // 1. Load List Logic (With Timeout Protection)
+  function loadRecordsList() {
+      const container = document.getElementById('recordsListContainer');
+      const loadingOverlay = document.getElementById('listLoadingOverlay');
+      loadingOverlay.classList.remove('hidden');
+
+      const listTimeout = setTimeout(() => {
+          loadingOverlay.classList.add('hidden');
+          container.innerHTML = `
+              <div class="p-4 text-center text-red-600 font-semibold">
+                  <i data-lucide="alert-triangle" class="w-6 h-6 inline-block mb-2"></i>
+                  <p>ไม่สามารถโหลดรายการได้ทันเวลา (Timeout)</p>
+                  <p class="text-sm text-gray-500 mt-1">ตรวจสอบอินเทอร์เน็ต หรือ ข้อมูลใน Sheet</p>
+              </div>`;
+          lucide.createIcons();
+      }, 30000);
+
+      google.script.run
+          .withSuccessHandler((records) => {
+              clearTimeout(listTimeout);
+              renderRecordsList(records);
+          })
+          .withFailureHandler((error) => {
+              clearTimeout(listTimeout);
+              loadingOverlay.classList.add('hidden');
+              container.innerHTML = `<div class="p-4 text-center text-red-500">Error: ${error.message}</div>`;
+          })
+          .getAllRecords();
+  }
+
+  // 2. Render List Items (Fix for Syntax Error)
+  function renderRecordsList(records) {
+      const container = document.getElementById('recordsListContainer');
+      const loadingOverlay = document.getElementById('listLoadingOverlay');
+      loadingOverlay.classList.add('hidden'); 
+
+      if (!Array.isArray(records) || records.length === 0) {
+          container.innerHTML = '<div class="p-4 text-center text-gray-500">ไม่พบรายการบันทึกข้อมูล</div>';
+          return;
+      }
+
+      const html = records.map((record) => {
+          return `
+            <div class="p-4 border-b border-gray-200 data-list-row items-center hover:bg-gray-50 transition duration-150">
+                <div class="font-bold text-sm text-purple-700 truncate">${record.an}</div>
+                <div class="text-sm text-gray-800 truncate">${record.name}</div>
+                <div class="text-xs text-gray-600">ผ่าตัด: ${record.surgeryDate || '-'}<br>จำหน่าย: ${record.dischargeDate || '-'}</div>
+                <div class="flex justify-center gap-2">
+                    <button onclick="confirmLoadRecord('${record.an}')" title="โหลดเพื่อแก้ไข" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition shadow-sm">
+                        <i data-lucide="edit" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="confirmDeleteRecord('${record.an}', '${record.name}')" title="ลบข้อมูล" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition shadow-sm">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+          `;
+      }).join('');
+
+      container.innerHTML = html;
+      lucide.createIcons();
+  }
+
+  // 3. Load Specific Record
+  function loadRecordByAN() {
+      const an = document.getElementById('an').value.trim();
+      if (!an) {
+          Swal.fire('กรุณาใส่ AN', 'เพื่อค้นหาข้อมูลเดิมมาแก้ไข', 'warning');
+          return;
+      }
+      
+      Swal.fire({ title: 'กำลังค้นหา...', icon: 'info', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      google.script.run
+          .withSuccessHandler((result) => {
+              if (result.status === "success") {
+                  const data = result.data;
+                  document.getElementById('firstName').value = data.firstName;
+                  document.getElementById('lastName').value = data.lastName;
+                  document.getElementById('surgeryDate').value = data.surgeryDate;
+                  document.getElementById('dischargeDate').value = data.dischargeDate;
+                  checkedItems = data.checkedItems;
+                  
+                  Swal.fire('โหลดสำเร็จ!', `ข้อมูล AN: ${data.an}`, 'success');
+                  saveStateToLocalStorage();
+                  renderApp();
+              } else {
+                  Swal.fire('ไม่พบข้อมูล', result.message, 'error');
+              }
+          })
+          .withFailureHandler(e => Swal.fire('Error', e.message, 'error'))
+          .getRecordByAN(an);
+  }
+
+  function confirmLoadRecord(an) {
+      Swal.fire({
+          title: 'โหลดข้อมูล?',
+          text: `ต้องการโหลดข้อมูล AN: ${an} มาแก้ไข?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'โหลดข้อมูล'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              document.getElementById('an').value = an;
+              setAppMode('assessment');
+              loadRecordByAN();
+          }
+      });
+  }
+
+  // 4. Delete Logic
+  function confirmDeleteRecord(an, name) {
+      Swal.fire({
+          title: 'ยืนยันการลบ?',
+          text: `ลบข้อมูล AN: ${an} (${name}) ถาวร?`,
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#ef4444',
+          confirmButtonText: 'ลบข้อมูล'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              Swal.fire({ title: 'กำลังลบ...', didOpen: () => Swal.showLoading() });
+              google.script.run
+                  .withSuccessHandler(res => {
+                      if (res.status === "success") {
+                          Swal.fire('ลบสำเร็จ', '', 'success');
+                          loadRecordsList();
+                      } else Swal.fire('ล้มเหลว', res.message, 'error');
+                  })
+                  .deleteRecordByAN(an);
+          }
+      });
+  }
+
+  // 5. Submit Logic
+  function submitDataToSheet() {
+    if (!isFormValid()) return;
+
+    Swal.fire({ title: 'กำลังบันทึก...', text: 'ส่งข้อมูลไปยัง Google Sheet', icon: 'info', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const payload = {
+      patientInfo: getPatientInfo(),
+      checkedItems: checkedItems,
+      assessmentData: assessmentData
+    };
+    
+    google.script.run
+      .withSuccessHandler(res => {
+          Swal.fire({
+              title: 'บันทึกสำเร็จ!',
+              text: res.message,
+              icon: 'success',
+              confirmButtonText: 'ดูรายงาน PDF',
+              showCancelButton: true,
+              cancelButtonText: 'ปิด'
+          }).then((r) => {
+              if (r.isConfirmed) generatePDF();
+              clearStateAndForm();
+          });
+      })
+      .withFailureHandler(e => Swal.fire('Error', e.message, 'error'))
+      .saveAssessmentData(payload);
+  }
+
+  // -------------------------------------------------------------
+  // PDF Generation
+  // -------------------------------------------------------------
+  function generatePDF() {
+    const patientInfo = getPatientInfo();
+    const content = document.createElement('div');
+    content.style.padding = '40px';
+    content.style.fontFamily = 'Arial, sans-serif';
+    content.style.maxWidth = '800px';
+    content.style.margin = '0 auto';
+    
+    // PDF HTML Construction
+    content.innerHTML = `
+      <div style="text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+        <h1 style="color: #1e40af; margin: 0;">แบบประเมิน Safety for Ambulate</h1>
+        <p style="color: #64748b;">รายงานการประเมินผู้ป่วย</p>
+      </div>
+      <table style="width: 100%; margin-bottom: 30px; border-collapse: collapse;">
+          <tr><td style="font-weight: bold; padding: 5px;">ชื่อ-นามสกุล:</td><td>${patientInfo.firstName} ${patientInfo.lastName}</td></tr>
+          <tr><td style="font-weight: bold; padding: 5px;">AN:</td><td>${patientInfo.an}</td></tr>
+          <tr><td style="font-weight: bold; padding: 5px;">วันที่ผ่าตัด:</td><td>${patientInfo.surgeryDate || '-'}</td></tr>
+          <tr><td style="font-weight: bold; padding: 5px;">วันที่จำหน่าย:</td><td>${patientInfo.dischargeDate || '-'}</td></tr>
+      </table>
+    `;
+
+    // Loop Assessment Data
+    Object.entries(assessmentData).forEach(([key, data]) => {
+      const { checked, total } = getProgressCount(key);
+      const percentage = Math.round((checked / total) * 100);
+      let color = key === 'surgery' ? '#3b82f6' : key.includes('postop') ? '#a855f7' : '#ec4899';
+
+      content.innerHTML += `
+        <div style="margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <div style="background: ${color}; color: white; padding: 10px;">
+            <h3 style="margin:0;">${data.title} (${percentage}%)</h3>
+          </div>
+          <div style="padding: 10px;">
+            ${data.items.map(item => `
+              <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <span style="margin-right: 10px; color: ${checkedItems[item.id] ? '#10b981' : '#ccc'}; font-weight: bold;">
+                  ${checkedItems[item.id] ? '☑' : '☐'}
+                </span>
+                <span>${item.text}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    // Print Logic
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`<html><head><title>Report</title></head><body>${content.innerHTML}</body></html>`);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 500);
+  }
+</script>
+
+</body>
+</html>
