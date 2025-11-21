@@ -72,6 +72,27 @@
         แบบประเมินและฐานข้อมูลการเคลื่อนไหวของผู้ป่วย
       </p>
     </div>
+    // URL ที่ได้จากการ Deploy Google Apps Script
+const scriptURL = 'วาง_WEB_APP_URL_ของคุณที่นี่';
+
+function saveDataToGoogleSheet(dataObj) {
+  // dataObj คือ object ข้อมูลที่คุณต้องการบันทึก เช่น { Name: "Somchai", Score: 10, Result: "Good" }
+  // *ชื่อ key ใน object ต้องตรงกับหัวตารางใน Google Sheet
+
+  fetch(scriptURL, {
+    method: 'POST',
+    body: JSON.stringify(dataObj)
+  })
+  .then(response => {
+      console.log('Success!', response);
+      alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+      // อาจจะสั่งให้รีเซ็ตหน้าจอ หรือพาไปหน้าอื่นต่อ
+  })
+  .catch(error => {
+      console.error('Error!', error.message);
+      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+  });
+}
 
     <div class="flex justify-center mb-6">
       <button 
