@@ -72,28 +72,7 @@
         แบบประเมินและฐานข้อมูลการเคลื่อนไหวของผู้ป่วย
       </p>
     </div>
-    // URL ที่ได้จากการ Deploy Google Apps Script
-const scriptURL = 'https://script.google.com/macros/s/AKfycbwvmWLSVSCp3Sgy5LexLNNYyIMZUItfMh-hCGwdFXG-aEf_6c3U4wAdV1KnXtnv55tp/exec';
-
-function saveDataToGoogleSheet(dataObj) {
-  // dataObj คือ object ข้อมูลที่คุณต้องการบันทึก เช่น { Name: "Somchai", Score: 10, Result: "Good" }
-  // *ชื่อ key ใน object ต้องตรงกับหัวตารางใน Google Sheet
-
-  fetch(scriptURL, {
-    method: 'POST',
-    body: JSON.stringify(dataObj)
-  })
-  .then(response => {
-      console.log('Success!', response);
-      alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
-      // อาจจะสั่งให้รีเซ็ตหน้าจอ หรือพาไปหน้าอื่นต่อ
-  })
-  .catch(error => {
-      console.error('Error!', error.message);
-      alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-  });
-}
-
+   
     <div class="flex justify-center mb-6">
       <button 
         id="modeAssess"
@@ -647,34 +626,67 @@ function saveDataToGoogleSheet(dataObj) {
   }
 
   // 5. Submit Logic
-  function submitDataToSheet() {
-    if (!isFormValid()) return;
+// ------------------------------------------------------
+// แก้ไข URL ให้เป็นของคุณที่ได้จากการ Deploy (ส่วนที่ 1)
+// ------------------------------------------------------
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwvmWLSVSCp3Sgy5LexLNNYyIMZUItfMh-hCGwdFXG-aEf_6c3U4wAdV1KnXtnv55tp/exec"; 
 
-    Swal.fire({ title: 'กำลังบันทึก...', text: 'ส่งข้อมูลไปยัง Google Sheet', icon: 'info', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+function submitDataToSheet() {
+  if (!isFormValid()) {
+    Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอก ชื่อ-นามสกุล และ AN ให้ครบ', 'warning');
+    return;
+  }
 
-    const payload = {
-      patientInfo: getPatientInfo(),
-      checkedItems: checkedItems,
-      assessmentData: assessmentData
-    };
-    
-    google.script.run
-      .withSuccessHandler(res => {
+  // แสดง Loading
+  Swal.fire({ 
+    title: 'กำลังบันทึกข้อมูล...', 
+    text: 'โปรดรอสักครู่ ระบบกำลังส่งข้อมูลไปยัง Google Sheet', 
+    icon: 'info', 
+    allowOutsideClick: false, 
+    showConfirmButton: false, 
+    didOpen: () => Swal.showLoading() 
+  });
+
+  const payload = {
+    patientInfo: getPatientInfo(),
+    checkedItems: checkedItems,
+    assessmentData: assessmentData
+  };
+  
+  // เปลี่ยนจาก google.script.run เป็น fetch
+  fetch(WEB_APP_URL, {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(response => response.json())
+  .then(data => {
+      if (data.status === 'success') {
           Swal.fire({
-              title: 'บันทึกสำเร็จ!',
-              text: res.message,
-              icon: 'success',
-              confirmButtonText: 'ดูรายงาน PDF',
-              showCancelButton: true,
-              cancelButtonText: 'ปิด'
-          }).then((r) => {
-              if (r.isConfirmed) generatePDF();
+            title: 'บันทึกสำเร็จ!',
+            text: data.message,
+            icon: 'success',
+            confirmButtonText: 'ดูรายงาน PDF',
+            allowOutsideClick: false
+          }).then((res) => {
+              if (res.isConfirmed) {
+                  generatePDF();
+              }
               clearStateAndForm();
           });
-      })
-      .withFailureHandler(e => Swal.fire('Error', e.message, 'error'))
-      .saveAssessmentData(payload);
-  }
+      } else {
+          throw new Error(data.message);
+      }
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      Swal.fire({
+        title: 'บันทึกไม่สำเร็จ!',
+        text: 'เกิดข้อผิดพลาด: ' + error.message,
+        icon: 'error',
+        confirmButtonText: 'ตกลง'
+      });
+  });
+}
 
   // -------------------------------------------------------------
   // PDF Generation
